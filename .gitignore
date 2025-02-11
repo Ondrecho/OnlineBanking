@@ -31,3 +31,6 @@ build/
 
 ### VS Code ###
 .vscode/
+
+sonar-run.txt
+google_checks.xml
