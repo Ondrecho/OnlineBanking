@@ -11,7 +11,7 @@
 	<groupId>by.onlinebanking</groupId>
 	<artifactId>onlinebanking</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>online-banking</name>
+	<fullName>online-banking</fullName>
 	<description>A REST API for managing bank accounts and transactions</description>
 	<url/>
 	<licenses>
@@ -37,12 +37,6 @@
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-data-jdbc</artifactId>
-			<version>3.4.2</version>
-		</dependency>
-
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-jpa</artifactId>
 		</dependency>
 
@@ -56,6 +50,17 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.hibernate</groupId>
+			<artifactId>hibernate-validator</artifactId>
+			<version>8.0.2.Final</version>
 		</dependency>
 
 		<dependency>

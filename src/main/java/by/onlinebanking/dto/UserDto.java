@@ -1,63 +1,43 @@
 package by.onlinebanking.dto;
 
+import by.onlinebanking.model.RoleEnum;
 import by.onlinebanking.model.User;
-import java.util.Date;
+import java.util.Set;
 
 public class UserDto {
     private Long id;
-    private String name;
-    private String email;
-    private String phoneNumber;
-    private Date dateOfBirth;
-
-    public UserDto() {
-    }
+    private String fullName;
+    private Set<RoleEnum> roles;
 
     public UserDto(User user) {
         this.id = user.getId();
-        this.name = user.getName();
-        this.email = user.getEmail();
-        this.phoneNumber = user.getPhoneNumber();
-        this.dateOfBirth = user.getDateOfBirth();
+        this.fullName = user.getFullName();
+        this.roles = user.getRoles();
     }
 
-    public Long getId() {
+    public UserDto() {}
+
+    public long getId() {
         return id;
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public String getPhoneNumber() {
-        return phoneNumber;
-    }
-
-    public Date getDateOfBirth() {
-        return dateOfBirth;
-    }
-
-    public void setId(Long id) {
+    public void setId(long id) {
         this.id = id;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public String getFullName() {
+        return fullName;
     }
 
-    public void setEmail(String email) {
-        this.email = email;
+    public void setFullName(String fullName) {
+        this.fullName = fullName;
     }
 
-    public void setPhoneNumber(String phoneNumber) {
-        this.phoneNumber = phoneNumber;
+    public Set<RoleEnum> getRoles() {
+        return roles;
     }
 
-    public void setDateOfBirth(Date dateOfBirth) {
-        this.dateOfBirth = dateOfBirth;
+    public void setRoles(Set<RoleEnum> roles) {
+        this.roles = roles;
     }
 }
