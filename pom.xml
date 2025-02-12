@@ -11,7 +11,7 @@
 	<groupId>by.onlinebanking</groupId>
 	<artifactId>onlinebanking</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<fullName>online-banking</fullName>
+	<name>online-banking</name>
 	<description>A REST API for managing bank accounts and transactions</description>
 	<url/>
 	<licenses>
@@ -46,15 +46,17 @@
 			<scope>runtime</scope>
 		</dependency>
 
+
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-test</artifactId>
-			<scope>test</scope>
+			<artifactId>spring-boot-devtools</artifactId>
+			<scope>runtime</scope>
 		</dependency>
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-security</artifactId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
 		</dependency>
 
 		<dependency>

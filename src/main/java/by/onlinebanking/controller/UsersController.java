@@ -3,25 +3,25 @@ package by.onlinebanking.controller;
 import by.onlinebanking.dto.UserDetailDto;
 import by.onlinebanking.dto.UserDto;
 import by.onlinebanking.service.UserService;
-import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/users")
 public class UsersController {
-    @Autowired
-    private UserService userService;
+    private final UserService userService;
 
-    /**
-     * Retrieves all users.
-     *
-     * @return a response entity with the list of users
-     */
+    @Autowired
+    public UsersController(UserService userService) {
+        this.userService = userService;
+    }
 
     @GetMapping("/")
     public ResponseEntity<List<UserDto>> getAllUsers() {
@@ -48,7 +48,7 @@ public class UsersController {
     }
 
     @GetMapping("/detail/{userId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    //@PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserDetailDto> getDetailedUserById(@PathVariable Long userId) {
         Optional<UserDetailDto> userDetailDtoOptional = userService.getDetailedUserById(userId);
         if (!userDetailDtoOptional.isPresent()) {

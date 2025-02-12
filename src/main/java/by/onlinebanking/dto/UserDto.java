@@ -1,13 +1,14 @@
 package by.onlinebanking.dto;
 
-import by.onlinebanking.model.RoleEnum;
+import by.onlinebanking.model.Role;
 import by.onlinebanking.model.User;
+import java.util.HashSet;
 import java.util.Set;
 
 public class UserDto {
     private Long id;
     private String fullName;
-    private Set<RoleEnum> roles;
+    private Set<Role> roles = new HashSet<>();
 
     public UserDto(User user) {
         this.id = user.getId();
@@ -33,11 +34,11 @@ public class UserDto {
         this.fullName = fullName;
     }
 
-    public Set<RoleEnum> getRoles() {
+    public Set<Role> getRoles() {
         return roles;
     }
 
-    public void setRoles(Set<RoleEnum> roles) {
+    public void setRoles(Set<Role> roles) {
         this.roles = roles;
     }
 }

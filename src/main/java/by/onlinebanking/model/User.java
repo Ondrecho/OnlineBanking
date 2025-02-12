@@ -1,7 +1,13 @@
 package by.onlinebanking.model;
 
-import jakarta.persistence.*;
-
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.Table;
 import java.sql.Date;
 import java.util.HashSet;
 import java.util.Set;
@@ -18,10 +24,13 @@ public class User {
     private Date dateOfBirth;
     private String password;
 
-    @Enumerated(EnumType.STRING)
-    @ElementCollection(targetClass = RoleEnum.class, fetch = FetchType.EAGER)
-    @CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"))
-    private Set<RoleEnum> roles = new HashSet<>();
+    @ManyToMany
+    @JoinTable(
+            name = "user_roles",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "role_id")
+    )
+    private Set<Role> roles = new HashSet<>();
 
     public Long getId() {
         return id;
@@ -63,11 +72,11 @@ public class User {
         this.password = password;
     }
 
-    public Set<RoleEnum> getRoles() {
+    public Set<Role> getRoles() {
         return roles;
     }
 
-    public void setRoles(Set<RoleEnum> roles) {
+    public void setRoles(Set<Role> roles) {
         this.roles = roles;
     }
 }

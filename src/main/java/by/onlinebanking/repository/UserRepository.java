@@ -1,7 +1,6 @@
 package by.onlinebanking.repository;
 
 import by.onlinebanking.model.User;
-
 import java.util.List;
 import java.util.Optional;
 import org.jetbrains.annotations.NotNull;
