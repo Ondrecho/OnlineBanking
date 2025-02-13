@@ -1,6 +1,6 @@
 package by.onlinebanking.service;
 
-import by.onlinebanking.dto.UserDetailDto;
+import by.onlinebanking.dto.UserCreateUpdateDto;
 import by.onlinebanking.dto.UserDto;
 import by.onlinebanking.model.User;
 import by.onlinebanking.repository.UserRepository;
@@ -33,8 +33,40 @@ public class UserService {
         return users.stream().map(UserDto::new).toList();
     }
 
-    public Optional<UserDetailDto> getDetailedUserById(Long id) {
+    public UserDto createUser(UserCreateUpdateDto userCreateUpdateDto) {
+        User user = new User();
+        user.setFullName(userCreateUpdateDto.getFullName());
+        user.setEmail(userCreateUpdateDto.getEmail());
+        user.setDateOfBirth(userCreateUpdateDto.getDateOfBirth());
+        user.setPassword(userCreateUpdateDto.getPassword());
+        user.setRoles(userCreateUpdateDto.getRoles());
+
+        User savedUser = userRepository.save(user);
+        return new UserDto(savedUser);
+    }
+
+    public Optional<UserDto> updateUser(Long id, UserCreateUpdateDto userCreateUpdateDto) {
         Optional<User> userOptional = userRepository.findById(id);
-        return userOptional.map(UserDetailDto::new);
+        if (!userOptional.isPresent()) {
+            return Optional.empty();
+        }
+
+        User user = userOptional.get();
+        user.setFullName(userCreateUpdateDto.getFullName());
+        user.setEmail(userCreateUpdateDto.getEmail());
+        user.setDateOfBirth(userCreateUpdateDto.getDateOfBirth());
+        user.setPassword(userCreateUpdateDto.getPassword());
+        user.setRoles(userCreateUpdateDto.getRoles());
+
+        User savedUser = userRepository.save(user);
+        return Optional.of(new UserDto(savedUser));
+    }
+
+    public boolean deleteUser(Long id) {
+        if (!userRepository.existsById(id)) {
+            return false;
+        }
+        userRepository.deleteById(id);
+        return true;
     }
 }

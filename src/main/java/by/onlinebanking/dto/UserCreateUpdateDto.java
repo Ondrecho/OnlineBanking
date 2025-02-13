@@ -1,37 +1,29 @@
-package by.onlinebanking.model;
+package by.onlinebanking.dto;
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.JoinTable;
-import jakarta.persistence.ManyToMany;
-import jakarta.persistence.Table;
+import by.onlinebanking.model.Role;
+import by.onlinebanking.model.User;
 import java.sql.Date;
 import java.util.HashSet;
 import java.util.Set;
 
-@Entity
-@Table(name = "users")
-public class User {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+public class UserCreateUpdateDto {
     private Long id;
-
     private String fullName;
     private String email;
     private Date dateOfBirth;
     private String password;
-
-    @ManyToMany(cascade = CascadeType.PERSIST)
-    @JoinTable(
-            name = "user_roles",
-            joinColumns = @JoinColumn(name = "user_id"),
-            inverseJoinColumns = @JoinColumn(name = "role_id")
-    )
     private Set<Role> roles = new HashSet<>();
+
+    public UserCreateUpdateDto() {}
+
+    public UserCreateUpdateDto(User user) {
+        this.id = user.getId();
+        this.fullName = user.getFullName();
+        this.email = user.getEmail();
+        this.dateOfBirth = user.getDateOfBirth();
+        this.password = user.getPassword();
+        this.roles = user.getRoles();
+    }
 
     public Long getId() {
         return id;
