@@ -5,6 +5,7 @@ import by.onlinebanking.model.User;
 import java.sql.Date;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class UserCreateUpdateDto {
     private Long id;

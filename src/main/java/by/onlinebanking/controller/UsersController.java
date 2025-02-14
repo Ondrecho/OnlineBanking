@@ -37,7 +37,7 @@ public class UsersController {
     @GetMapping("/{userId}")
     public ResponseEntity<UserDto> getUserById(@PathVariable Long userId) {
         Optional<UserDto> userDtoOptional = userService.getUserById(userId);
-        if (!userDtoOptional.isPresent()) {
+        if (userDtoOptional.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok(userDtoOptional.get());
@@ -60,8 +60,8 @@ public class UsersController {
 
     @PutMapping("/{userId}")
     public ResponseEntity<UserDto> updateUser(@PathVariable Long userId, @Validated @RequestBody UserCreateUpdateDto userCreateUpdateDto) {
-        Optional<UserDto> updatedUserDtoOptional = userService.updateUser(userId,userCreateUpdateDto);
-        if (!updatedUserDtoOptional.isPresent()) {
+        Optional<UserDto> updatedUserDtoOptional = userService.updateUser(userId, userCreateUpdateDto);
+        if (updatedUserDtoOptional.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok(updatedUserDtoOptional.get());
@@ -70,7 +70,7 @@ public class UsersController {
     @DeleteMapping("/{userId}")
     public ResponseEntity<String> deleteUser(@PathVariable Long userId) {
         boolean deleted = userService.deleteUser(userId);
-        if(!deleted) {
+        if (!deleted) {
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok("User deleted successfully");
