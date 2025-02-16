@@ -1,6 +1,6 @@
 package by.onlinebanking.service;
 
-import by.onlinebanking.dto.UserCreateUpdateDto;
+import by.onlinebanking.dto.RoleDto;
 import by.onlinebanking.dto.UserDto;
 import by.onlinebanking.model.Role;
 import by.onlinebanking.model.User;
@@ -25,12 +25,12 @@ public class UserService {
         this.roleRepository = roleRepository;
     }
 
-    private Set<Role> validateAndFindRoles(Set<Role> roles) {
-        return roles.stream()
-                .map(role -> {
-                    Optional<Role> optionalRole = roleRepository.findByName(role.getName());
+    private Set<Role> validateAndFindRoles(Set<RoleDto> roleDtos) {
+        return roleDtos.stream()
+                .map(roleDto -> {
+                    Optional<Role> optionalRole = roleRepository.findByName(roleDto.getName());
                     if (optionalRole.isEmpty()) {
-                        throw new IllegalArgumentException("Role not found: " + role.getName());
+                        throw new IllegalArgumentException("Role not found: " + roleDto.getName());
                     }
                     return optionalRole.get();
                 })
@@ -52,34 +52,50 @@ public class UserService {
         return users.stream().map(UserDto::new).toList();
     }
 
-    private User updateUserFields(User user, UserCreateUpdateDto userCreateUpdateDto) {
-        user.setFullName(userCreateUpdateDto.getFullName());
-        user.setEmail(userCreateUpdateDto.getEmail());
-        user.setDateOfBirth(userCreateUpdateDto.getDateOfBirth());
-        user.setPassword(userCreateUpdateDto.getPassword());
+    public UserDto createUser(UserDto userDto) {
+        if (userDto.getId() != null || userDto.getPassword() == null) {
+            throw new IllegalArgumentException("Invalid user data");
+        }
+        User user = new User();
+        user.setFullName(userDto.getFullName());
+        user.setEmail(userDto.getEmail());
+        user.setDateOfBirth(userDto.getDateOfBirth());
+        user.setPassword(userDto.getPassword());
 
-        Set<Role> validatedRoles = validateAndFindRoles(userCreateUpdateDto.getRoles());
+        Set<Role> validatedRoles = validateAndFindRoles(userDto.getRoles());
         user.setRoles(validatedRoles);
 
-        return user;
-    }
-
-    public UserDto createUser(UserCreateUpdateDto userCreateUpdateDto) {
-        User user = new User();
-        User createdUser = updateUserFields(user, userCreateUpdateDto);
-        User savedUser = userRepository.save(createdUser);
+        User savedUser = userRepository.save(user);
         return new UserDto(savedUser);
     }
 
-    public Optional<UserDto> updateUser(Long id, UserCreateUpdateDto userCreateUpdateDto) {
+    public Optional<UserDto> updateUser(Long id, UserDto userDto) {
         Optional<User> userOptional = userRepository.findById(id);
         if (userOptional.isEmpty()) {
             return Optional.empty();
         }
 
         User user = userOptional.get();
-        User updatedUser = updateUserFields(user, userCreateUpdateDto);
-        User savedUser = userRepository.save(updatedUser);
+
+        if (userDto.getFullName() != null) {
+            user.setFullName(userDto.getFullName());
+        }
+        if (userDto.getEmail() != null) {
+            user.setEmail(userDto.getEmail());
+        }
+        if (userDto.getDateOfBirth() != null) {
+            user.setDateOfBirth(userDto.getDateOfBirth());
+        }
+        if (userDto.getPassword() != null) {
+            user.setPassword(userDto.getPassword());
+        }
+
+        if (userDto.getRoles() != null && !userDto.getRoles().isEmpty()) {
+            Set<Role> validatedRoles = validateAndFindRoles(userDto.getRoles());
+            user.setRoles(validatedRoles);
+        }
+
+        User savedUser = userRepository.save(user);
         return Optional.of(new UserDto(savedUser));
     }
 

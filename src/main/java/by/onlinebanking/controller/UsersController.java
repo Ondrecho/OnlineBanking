@@ -1,6 +1,5 @@
 package by.onlinebanking.controller;
 
-import by.onlinebanking.dto.UserCreateUpdateDto;
 import by.onlinebanking.dto.UserDto;
 import by.onlinebanking.service.UserService;
 import java.util.List;
@@ -53,14 +52,15 @@ public class UsersController {
     }
 
     @PostMapping("/")
-    public ResponseEntity<UserDto> createUser(@Validated @RequestBody UserCreateUpdateDto user) {
-        UserDto createdUserDto = userService.createUser(user);
+    public ResponseEntity<UserDto> createUser(@Validated @RequestBody UserDto userDto) {
+        UserDto createdUserDto = userService.createUser(userDto);
         return ResponseEntity.status(201).body(createdUserDto);
     }
 
     @PutMapping("/{userId}")
-    public ResponseEntity<UserDto> updateUser(@PathVariable Long userId, @Validated @RequestBody UserCreateUpdateDto userCreateUpdateDto) {
-        Optional<UserDto> updatedUserDtoOptional = userService.updateUser(userId, userCreateUpdateDto);
+    public ResponseEntity<UserDto> updateUser(@PathVariable Long userId,
+                                              @Validated @RequestBody UserDto userDto) {
+        Optional<UserDto> updatedUserDtoOptional = userService.updateUser(userId, userDto);
         if (updatedUserDtoOptional.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
