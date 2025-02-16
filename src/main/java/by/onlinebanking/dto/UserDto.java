@@ -1,7 +1,7 @@
 package by.onlinebanking.dto;
 
 import by.onlinebanking.model.User;
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.sql.Date;
 import java.util.HashSet;
 import java.util.Set;
@@ -16,6 +16,7 @@ public class UserDto {
     private String fullName;
     private String email;
     private Date dateOfBirth;
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
     private Set<RoleDto> roles = new HashSet<>();
 
@@ -30,10 +31,5 @@ public class UserDto {
         this.roles = user.getRoles().stream()
                 .map(RoleDto::new)
                 .collect(Collectors.toSet());
-    }
-
-    @JsonIgnore
-    public String getPassword() {
-        return password;
     }
 }
