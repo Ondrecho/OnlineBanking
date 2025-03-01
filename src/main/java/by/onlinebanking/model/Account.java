@@ -1,7 +1,10 @@
 package by.onlinebanking.model;
 
+import by.onlinebanking.model.enums.AccountStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -22,10 +25,14 @@ public class Account {
     private Long id;
 
     @Column(nullable = false, unique = true)
-    private String accountNumber;
+    private String iban;
 
     @Column(nullable = false)
     private Double balance;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private AccountStatus status = AccountStatus.ACTIVE;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)

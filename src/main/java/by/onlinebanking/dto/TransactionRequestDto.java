@@ -1,6 +1,6 @@
 package by.onlinebanking.dto;
 
-import by.onlinebanking.model.TransactionType;
+import by.onlinebanking.model.enums.TransactionType;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -8,8 +8,8 @@ import lombok.Setter;
 @Setter
 public class TransactionRequestDto {
     private TransactionType transactionType;
-    private Long accountId;
-    private Long fromAccountId;
-    private Long toAccountId;
+    private String iban;
+    private String fromIban;
+    private String toIban;
     private Double amount;
 }

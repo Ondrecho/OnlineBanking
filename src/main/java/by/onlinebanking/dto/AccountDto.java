@@ -8,12 +8,12 @@ import lombok.Setter;
 @Setter
 public class AccountDto {
     private Long id;
-    private String accountNumber;
+    private String iban;
     private Double balance;
 
     public AccountDto(Account account) {
         this.id = account.getId();
-        this.accountNumber = account.getAccountNumber();
+        this.iban = account.getIban();
         this.balance = account.getBalance();
     }
 }

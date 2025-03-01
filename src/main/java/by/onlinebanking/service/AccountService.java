@@ -1,15 +1,18 @@
 package by.onlinebanking.service;
 
 import by.onlinebanking.dto.AccountDto;
+import by.onlinebanking.dto.ResponseDto;
 import by.onlinebanking.dto.TransactionRequestDto;
 import by.onlinebanking.model.Account;
 import by.onlinebanking.model.User;
+import by.onlinebanking.model.enums.AccountStatus;
 import by.onlinebanking.repository.AccountRepository;
 import by.onlinebanking.repository.UserRepository;
+import by.onlinebanking.utils.IbanGenerator;
+import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -25,7 +28,7 @@ public class AccountService {
 
     public List<AccountDto> getAccountsByUserId(Long userId) {
         List<Account> accounts = accountRepository.findByUserId(userId);
-        return accounts.stream().map(AccountDto::new).collect(Collectors.toList());
+        return accounts.stream().map(AccountDto::new).toList();
     }
 
     public AccountDto createAccount(Long userId) {
@@ -34,36 +37,45 @@ public class AccountService {
 
         Account account = new Account();
         account.setUser(user);
-        account.setAccountNumber(UUID.randomUUID()
-                .toString().replace("-", "")
-                .substring(0, 16));
+        account.setIban(IbanGenerator.generateIban());
         account.setBalance(0.0);
+        account.setStatus(AccountStatus.ACTIVE);
+
         return new AccountDto(accountRepository.save(account));
     }
 
-    public void deleteAccount(String accountNumber) {
-        Account account = accountRepository.findByAccountNumber(accountNumber)
-                        .orElseThrow(()->new IllegalArgumentException("Account not found"));
-        accountRepository.delete(account);
+    public ResponseDto closeAccount(String iban) {
+        Account account = accountRepository.findByIban(iban)
+                        .orElseThrow(() -> new IllegalArgumentException("Account not found"));
+
+        if (account.getStatus() == AccountStatus.CLOSED) {
+            throw new IllegalArgumentException("Account is already closed");
+        }
+
+        if (account.getBalance() > 0.0) {
+            throw new IllegalArgumentException("You cannot close an account with a positive balance.");
+        }
+
+        account.setStatus(AccountStatus.CLOSED);
+        accountRepository.save(account);
+
+        return new ResponseDto("Account is closed", LocalDateTime.now(), HttpStatus.OK);
     }
 
-    public AccountDto processTransaction(TransactionRequestDto transactionRequestDto) {
-        return switch (transactionRequestDto.getTransactionType()) {
-            case DEPOSIT -> deposit(transactionRequestDto.getAccountId(), transactionRequestDto.getAmount());
-            case WITHDRAWAL -> withdraw(transactionRequestDto.getAccountId(),
-                                        transactionRequestDto.getAmount());
-            case TRANSFER -> {
-                transfer(transactionRequestDto.getFromAccountId(),
-                         transactionRequestDto.getToAccountId(),
-                         transactionRequestDto.getAmount());
-                yield null;
-            }
+    public ResponseDto processTransaction(TransactionRequestDto transactionRequest) {
+        return switch (transactionRequest.getTransactionType()) {
+            case DEPOSIT -> deposit(transactionRequest.getIban(), transactionRequest.getAmount());
+            case WITHDRAWAL -> withdraw(transactionRequest.getIban(),
+                                        transactionRequest.getAmount());
+            case TRANSFER -> transfer(transactionRequest.getFromIban(),
+                                      transactionRequest.getToIban(),
+                                      transactionRequest.getAmount());
             default -> throw new IllegalArgumentException("Invalid operation type");
         };
     }
 
-    public AccountDto deposit(Long accountId, Double amount) {
-        Account account = accountRepository.findById(accountId)
+    public ResponseDto deposit(String iban, Double amount) {
+        Account account = accountRepository.findByIban(iban)
                 .orElseThrow(() -> new IllegalArgumentException("Account not found"));
 
         if (amount <= 0) {
@@ -71,11 +83,14 @@ public class AccountService {
         }
 
         account.setBalance(account.getBalance() + amount);
-        return new AccountDto(accountRepository.save(account));
+        accountRepository.save(account);
+        return new ResponseDto("Deposit success: +" + amount,
+                                LocalDateTime.now(),
+                                HttpStatus.OK);
     }
 
-    public AccountDto withdraw(Long accountId, Double amount) {
-        Account account = accountRepository.findById(accountId)
+    public ResponseDto withdraw(String iban, Double amount) {
+        Account account = accountRepository.findByIban(iban)
                 .orElseThrow(() -> new IllegalArgumentException("Account not found"));
 
         if (amount <= 0 || account.getBalance() < amount) {
@@ -83,18 +98,21 @@ public class AccountService {
         }
 
         account.setBalance(account.getBalance() - amount);
-        return new AccountDto(accountRepository.save(account));
+        accountRepository.save(account);
+        return new ResponseDto("Withdrawal success: -" + amount,
+                LocalDateTime.now(),
+                HttpStatus.OK);
     }
 
-    public void transfer(Long fromAccountId, Long toAccountId, Double amount) {
-        if (fromAccountId.equals(toAccountId)) {
+    public ResponseDto transfer(String fromIban, String toIban, Double amount) {
+        if (fromIban.equals(toIban)) {
             throw new IllegalArgumentException("Cannot transfer from account to the same account");
         }
 
-        Account fromAccount = accountRepository.findById(fromAccountId)
+        Account fromAccount = accountRepository.findByIban(fromIban)
                 .orElseThrow(() -> new IllegalArgumentException("Sender account not found"));
 
-        Account toAccount = accountRepository.findById(toAccountId)
+        Account toAccount = accountRepository.findByIban(toIban)
                 .orElseThrow(() -> new IllegalArgumentException("Receiver account not found"));
 
         if (amount <= 0 || amount > fromAccount.getBalance()) {
@@ -106,5 +124,9 @@ public class AccountService {
 
         accountRepository.save(fromAccount);
         accountRepository.save(toAccount);
+
+        return new ResponseDto("Transfer successful" + amount + " from " + fromIban + " to " + toIban,
+                LocalDateTime.now(),
+                HttpStatus.OK);
     }
 }

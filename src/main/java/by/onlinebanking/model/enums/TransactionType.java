@@ -1,4 +1,4 @@
-package by.onlinebanking.model;
+package by.onlinebanking.model.enums;
 
 public enum TransactionType {
     DEPOSIT,
