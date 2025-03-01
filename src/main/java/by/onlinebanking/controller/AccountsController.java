@@ -1,5 +1,7 @@
 package by.onlinebanking.controller;
 
+import by.onlinebanking.dto.AccountDto;
+import by.onlinebanking.dto.TransactionRequestDto;
 import by.onlinebanking.model.Account;
 import by.onlinebanking.service.AccountService;
 import java.util.List;
@@ -10,7 +12,6 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -26,23 +27,24 @@ public class AccountsController {
     }
 
     @GetMapping("/user/{userId}")
-    public ResponseEntity<List<Account>> getUserAccounts(@PathVariable Long userId) {
+    public ResponseEntity<List<AccountDto>> getUserAccounts(@PathVariable Long userId) {
         return ResponseEntity.ok(accountService.getAccountsByUserId(userId));
     }
 
     @PostMapping("/user/{userId}")
-    public ResponseEntity<Account> createAccount(@PathVariable Long userId, @RequestBody Account account) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(accountService.createAccount(userId, account));
+    public ResponseEntity<AccountDto> createAccount(@PathVariable Long userId) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(accountService.createAccount(userId));
     }
 
-    @PutMapping("/{accountId}")
-    public ResponseEntity<Account> updateAccount(@PathVariable Long accountId, @RequestBody Account account) {
-        return ResponseEntity.ok(accountService.updateAccount(accountId, account));
-    }
-
-    @DeleteMapping("/{accountId}")
-    public ResponseEntity<String> deleteAccount(@PathVariable Long accountId) {
-        accountService.deleteAccount(accountId);
+    @DeleteMapping("/{accountNumber}")
+    public ResponseEntity<String> deleteAccount(@PathVariable String accountNumber) {
+        accountService.deleteAccount(accountNumber);
         return ResponseEntity.ok("Account deleted successfully");
+    }
+
+    @PostMapping("/transaction")
+    public ResponseEntity<AccountDto> handleTransaction(@RequestBody TransactionRequestDto transferRequest) {
+        AccountDto result = accountService.processTransaction(transferRequest);
+        return ResponseEntity.ok(result);
     }
 }

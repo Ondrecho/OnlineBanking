@@ -19,6 +19,7 @@ public class UserDto {
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
     private Set<RoleDto> roles = new HashSet<>();
+    private Set<AccountDto> accounts = new HashSet<>();
 
     public UserDto() {}
 
@@ -30,6 +31,9 @@ public class UserDto {
         this.password = user.getPassword();
         this.roles = user.getRoles().stream()
                 .map(RoleDto::new)
+                .collect(Collectors.toSet());
+        this.accounts = user.getAccounts().stream()
+                .map(AccountDto::new)
                 .collect(Collectors.toSet());
     }
 }
