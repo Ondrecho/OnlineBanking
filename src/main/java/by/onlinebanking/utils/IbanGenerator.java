@@ -1,12 +1,12 @@
 package by.onlinebanking.utils;
 
 import java.math.BigInteger;
-import java.util.Random;
+import java.security.SecureRandom;
 
 public class IbanGenerator {
     private static final String COUNTRY_CODE = "BY";
     private static final String BANK_CODE = "ABANK";
-    private static final Random RANDOM = new Random();
+    private static final SecureRandom RANDOM = new SecureRandom();
 
     private IbanGenerator() {}
 

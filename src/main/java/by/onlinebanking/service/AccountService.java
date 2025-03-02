@@ -6,9 +6,13 @@ import by.onlinebanking.dto.TransactionRequestDto;
 import by.onlinebanking.model.Account;
 import by.onlinebanking.model.User;
 import by.onlinebanking.model.enums.AccountStatus;
+import by.onlinebanking.model.enums.Currency;
+import by.onlinebanking.model.enums.TransactionType;
 import by.onlinebanking.repository.AccountRepository;
 import by.onlinebanking.repository.UserRepository;
+import by.onlinebanking.service.validation.TransactionValidator;
 import by.onlinebanking.utils.IbanGenerator;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,11 +23,15 @@ import org.springframework.stereotype.Service;
 public class AccountService {
     private final AccountRepository accountRepository;
     private final UserRepository userRepository;
+    private final TransactionValidator transactionValidator;
 
     @Autowired
-    public AccountService(AccountRepository accountRepository, UserRepository userRepository) {
+    public AccountService(AccountRepository accountRepository,
+                          UserRepository userRepository,
+                          TransactionValidator transactionValidator) {
         this.accountRepository = accountRepository;
         this.userRepository = userRepository;
+        this.transactionValidator = transactionValidator;
     }
 
     public List<AccountDto> getAccountsByUserId(Long userId) {
@@ -38,7 +46,6 @@ public class AccountService {
         Account account = new Account();
         account.setUser(user);
         account.setIban(IbanGenerator.generateIban());
-        account.setBalance(0.0);
         account.setStatus(AccountStatus.ACTIVE);
 
         return new AccountDto(accountRepository.save(account));
@@ -52,7 +59,7 @@ public class AccountService {
             throw new IllegalArgumentException("Account is already closed");
         }
 
-        if (account.getBalance() > 0.0) {
+        if (account.getBalance().compareTo(BigDecimal.ZERO) > 0) {
             throw new IllegalArgumentException("You cannot close an account with a positive balance.");
         }
 
@@ -62,7 +69,22 @@ public class AccountService {
         return new ResponseDto("Account is closed", LocalDateTime.now(), HttpStatus.OK);
     }
 
+    public ResponseDto deleteAccount(String iban) {
+        Account account = accountRepository.findByIban(iban)
+                .orElseThrow(() -> new IllegalArgumentException("Account not found"));
+
+        if (account.getStatus() != AccountStatus.CLOSED) {
+            throw new IllegalArgumentException("Account is not closed");
+        }
+
+        accountRepository.delete(account);
+
+        return new ResponseDto("Account " + iban + " is deleted", LocalDateTime.now(), HttpStatus.OK);
+    }
+
     public ResponseDto processTransaction(TransactionRequestDto transactionRequest) {
+        transactionValidator.validateTransaction(transactionRequest);
+
         return switch (transactionRequest.getTransactionType()) {
             case DEPOSIT -> deposit(transactionRequest.getIban(), transactionRequest.getAmount());
             case WITHDRAWAL -> withdraw(transactionRequest.getIban(),
@@ -74,58 +96,53 @@ public class AccountService {
         };
     }
 
-    public ResponseDto deposit(String iban, Double amount) {
+    public ResponseDto deposit(String iban, BigDecimal amount) {
         Account account = accountRepository.findByIban(iban)
                 .orElseThrow(() -> new IllegalArgumentException("Account not found"));
 
-        if (amount <= 0) {
-            throw new IllegalArgumentException("Amount must be greater than 0");
-        }
-
-        account.setBalance(account.getBalance() + amount);
+        account.setBalance(account.getBalance().add(amount));
         accountRepository.save(account);
-        return new ResponseDto("Deposit success: +" + amount,
+
+        return new ResponseDto("Deposit success: +" + amount + " " + account.getCurrency(),
                                 LocalDateTime.now(),
                                 HttpStatus.OK);
     }
 
-    public ResponseDto withdraw(String iban, Double amount) {
+    public ResponseDto withdraw(String iban, BigDecimal amount) {
         Account account = accountRepository.findByIban(iban)
                 .orElseThrow(() -> new IllegalArgumentException("Account not found"));
 
-        if (amount <= 0 || account.getBalance() < amount) {
+        if (amount.compareTo(BigDecimal.ZERO) <= 0 || account.getBalance().compareTo(amount) < 0) {
             throw new IllegalArgumentException("Insufficient funds for withdraw");
         }
 
-        account.setBalance(account.getBalance() - amount);
+        account.setBalance(account.getBalance().subtract(amount));
         accountRepository.save(account);
-        return new ResponseDto("Withdrawal success: -" + amount,
+
+        return new ResponseDto("Withdrawal success: -" + amount + " " + account.getCurrency(),
                 LocalDateTime.now(),
                 HttpStatus.OK);
     }
 
-    public ResponseDto transfer(String fromIban, String toIban, Double amount) {
-        if (fromIban.equals(toIban)) {
-            throw new IllegalArgumentException("Cannot transfer from account to the same account");
-        }
-
+    public ResponseDto transfer(String fromIban, String toIban, BigDecimal amount) {
         Account fromAccount = accountRepository.findByIban(fromIban)
                 .orElseThrow(() -> new IllegalArgumentException("Sender account not found"));
 
         Account toAccount = accountRepository.findByIban(toIban)
                 .orElseThrow(() -> new IllegalArgumentException("Receiver account not found"));
 
-        if (amount <= 0 || amount > fromAccount.getBalance()) {
+        if (amount.compareTo(BigDecimal.ZERO) <= 0 || fromAccount.getBalance().compareTo(amount) < 0) {
             throw new IllegalArgumentException("Insufficient funds for transfer");
         }
 
-        fromAccount.setBalance(fromAccount.getBalance() - amount);
-        toAccount.setBalance(toAccount.getBalance() + amount);
+        fromAccount.setBalance(fromAccount.getBalance().subtract(amount));
+        toAccount.setBalance(toAccount.getBalance().add(amount));
 
         accountRepository.save(fromAccount);
         accountRepository.save(toAccount);
 
-        return new ResponseDto("Transfer successful" + amount + " from " + fromIban + " to " + toIban,
+        return new ResponseDto("Transfer " + amount + " " + fromAccount.getCurrency() +
+                " from " + fromIban + " to " + toIban,
                 LocalDateTime.now(),
                 HttpStatus.OK);
     }

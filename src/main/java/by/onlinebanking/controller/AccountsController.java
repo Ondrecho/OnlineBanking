@@ -8,6 +8,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -45,6 +46,12 @@ public class AccountsController {
     @PostMapping("/transaction")
     public ResponseEntity<ResponseDto> handleTransaction(@RequestBody TransactionRequestDto request) {
         ResponseDto response = accountService.processTransaction(request);
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/{iban}")
+    public ResponseEntity<ResponseDto> deleteAccount(@PathVariable String iban) {
+        ResponseDto response = accountService.deleteAccount(iban);
         return ResponseEntity.ok(response);
     }
 }
