@@ -2,6 +2,7 @@ package by.onlinebanking.service.validation;
 
 import by.onlinebanking.dto.TransactionRequestDto;
 import by.onlinebanking.model.Account;
+import by.onlinebanking.model.enums.AccountStatus;
 import by.onlinebanking.model.enums.Currency;
 import by.onlinebanking.model.enums.TransactionType;
 import by.onlinebanking.repository.AccountRepository;
@@ -20,13 +21,44 @@ public class TransactionValidator {
     }
 
     public void validateTransaction(TransactionRequestDto transactionRequest) {
+        validateAccountStatuses(transactionRequest);
+
         validateAmount(transactionRequest.getAmount());
+
         validateCurrency(transactionRequest.getCurrency());
 
         if (transactionRequest.getTransactionType() == TransactionType.TRANSFER) {
             validateTransfer(transactionRequest);
         } else {
             validateAccountOperation(transactionRequest);
+        }
+    }
+
+    private void validateAccountStatuses(TransactionRequestDto transactionRequest) {
+        TransactionType transactionType = transactionRequest.getTransactionType();
+
+        switch (transactionType) {
+            case TRANSFER -> {
+                validateAccountStatus(transactionRequest.getFromIban(), "Sender account");
+                validateAccountStatus(transactionRequest.getToIban(), "Receiver account");
+            }
+            case DEPOSIT, WITHDRAWAL -> {
+                validateAccountStatus(transactionRequest.getIban(), "Account");
+            }
+            default -> throw new ValidationException("Invalid transaction type");
+        }
+    }
+
+    private void validateAccountStatus(String iban, String accountType) {
+        if (iban == null) {
+            throw new ValidationException(accountType + " IBAN cannot be null");
+        }
+
+        Account account = accountRepository.findByIban(iban)
+                .orElseThrow(() -> new ValidationException(accountType + " not found: " + iban));
+
+        if (account.getStatus() == AccountStatus.CLOSED) {
+            throw new ValidationException(accountType + " is closed: " + iban);
         }
     }
 
@@ -43,10 +75,6 @@ public class TransactionValidator {
     }
 
     private void validateTransfer(TransactionRequestDto transactionRequest) {
-        if (transactionRequest.getFromIban() == null || transactionRequest.getToIban() == null) {
-            throw new ValidationException("Iban cannot be empty");
-        }
-
         if (transactionRequest.getFromIban().equals(transactionRequest.getToIban())) {
             throw new ValidationException("Sender and receiver account cannot be the same");
         }
@@ -82,7 +110,7 @@ public class TransactionValidator {
             throw new ValidationException("Account currency does not match transaction currency");
         }
 
-        if (transactionRequest.getTransactionType() == TransactionType.WITHDRAWAL &
+        if (transactionRequest.getTransactionType() == TransactionType.WITHDRAWAL &&
                 account.getBalance().compareTo(transactionRequest.getAmount()) < 0) {
             throw new ValidationException("Insufficient funds");
         }

@@ -7,11 +7,11 @@ import by.onlinebanking.model.Account;
 import by.onlinebanking.model.User;
 import by.onlinebanking.model.enums.AccountStatus;
 import by.onlinebanking.model.enums.Currency;
-import by.onlinebanking.model.enums.TransactionType;
 import by.onlinebanking.repository.AccountRepository;
 import by.onlinebanking.repository.UserRepository;
 import by.onlinebanking.service.validation.TransactionValidator;
 import by.onlinebanking.utils.IbanGenerator;
+import jakarta.transaction.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -39,21 +39,24 @@ public class AccountService {
         return accounts.stream().map(AccountDto::new).toList();
     }
 
-    public AccountDto createAccount(Long userId) {
+    public AccountDto createAccount(Long userId, Currency currency) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
         Account account = new Account();
         account.setUser(user);
         account.setIban(IbanGenerator.generateIban());
+        account.setBalance(BigDecimal.ZERO);
+        account.setCurrency(currency);
         account.setStatus(AccountStatus.ACTIVE);
 
         return new AccountDto(accountRepository.save(account));
     }
 
+    @Transactional
     public ResponseDto closeAccount(String iban) {
         Account account = accountRepository.findByIban(iban)
-                        .orElseThrow(() -> new IllegalArgumentException("Account not found"));
+                        .orElseThrow(() -> new IllegalArgumentException("Account was not found"));
 
         if (account.getStatus() == AccountStatus.CLOSED) {
             throw new IllegalArgumentException("Account is already closed");
@@ -69,6 +72,22 @@ public class AccountService {
         return new ResponseDto("Account is closed", LocalDateTime.now(), HttpStatus.OK);
     }
 
+    @Transactional
+    public ResponseDto openAccount(String iban) {
+        Account account = accountRepository.findByIban(iban)
+                .orElseThrow(() -> new IllegalArgumentException("Account was not found"));
+
+        if (account.getStatus() != AccountStatus.CLOSED) {
+            throw new IllegalArgumentException("Account is already open or in an invalid state");
+        }
+
+        account.setStatus(AccountStatus.ACTIVE);
+        accountRepository.save(account);
+
+        return new ResponseDto("Account is opened", LocalDateTime.now(), HttpStatus.OK);
+    }
+
+    @Transactional
     public ResponseDto deleteAccount(String iban) {
         Account account = accountRepository.findByIban(iban)
                 .orElseThrow(() -> new IllegalArgumentException("Account not found"));
@@ -82,6 +101,7 @@ public class AccountService {
         return new ResponseDto("Account " + iban + " is deleted", LocalDateTime.now(), HttpStatus.OK);
     }
 
+    @Transactional
     public ResponseDto processTransaction(TransactionRequestDto transactionRequest) {
         transactionValidator.validateTransaction(transactionRequest);
 
@@ -96,9 +116,10 @@ public class AccountService {
         };
     }
 
+    @Transactional
     public ResponseDto deposit(String iban, BigDecimal amount) {
         Account account = accountRepository.findByIban(iban)
-                .orElseThrow(() -> new IllegalArgumentException("Account not found"));
+                .orElseThrow(() -> new IllegalArgumentException("Cannot find account"));
 
         account.setBalance(account.getBalance().add(amount));
         accountRepository.save(account);
@@ -108,6 +129,7 @@ public class AccountService {
                                 HttpStatus.OK);
     }
 
+    @Transactional
     public ResponseDto withdraw(String iban, BigDecimal amount) {
         Account account = accountRepository.findByIban(iban)
                 .orElseThrow(() -> new IllegalArgumentException("Account not found"));
@@ -124,6 +146,7 @@ public class AccountService {
                 HttpStatus.OK);
     }
 
+    @Transactional
     public ResponseDto transfer(String fromIban, String toIban, BigDecimal amount) {
         Account fromAccount = accountRepository.findByIban(fromIban)
                 .orElseThrow(() -> new IllegalArgumentException("Sender account not found"));

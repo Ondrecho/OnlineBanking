@@ -1,5 +1,6 @@
 package by.onlinebanking.model.enums;
 
 public enum RoleEnum {
-    // TODO
+    ROLE_ADMIN,
+    ROLE_USER
 }
