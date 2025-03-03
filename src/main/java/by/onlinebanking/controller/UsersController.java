@@ -49,6 +49,11 @@ public class UsersController {
         return ResponseEntity.ok(userDtoList);
     }
 
+    @GetMapping("/by-iban/{iban}")
+    public ResponseEntity<UserDto> getUserByIban(@PathVariable String iban) {
+        return ResponseEntity.ok(userService.getUserByIban(iban));
+    }
+
     @PostMapping("/")
     public ResponseEntity<UserDto> createUser(@Validated @RequestBody UserDto userDto) {
         UserDto createdUserDto = userService.createUser(userDto);

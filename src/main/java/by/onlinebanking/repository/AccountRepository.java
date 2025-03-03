@@ -9,9 +9,9 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface AccountRepository extends JpaRepository<Account, Long> {
-    @EntityGraph(attributePaths = {"user"})
     List<Account> findByUserId(Long userId);
 
-    Optional<Account> findByIban(String accountNumber);
+    @EntityGraph(attributePaths = {"user"})
+    Optional<Account> findByIban(String iban);
 }
 
