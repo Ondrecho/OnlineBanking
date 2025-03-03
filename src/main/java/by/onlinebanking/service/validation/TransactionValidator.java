@@ -42,9 +42,8 @@ public class TransactionValidator {
                 validateAccountStatus(transactionRequest.getFromIban(), "Sender account");
                 validateAccountStatus(transactionRequest.getToIban(), "Receiver account");
             }
-            case DEPOSIT, WITHDRAWAL -> {
-                validateAccountStatus(transactionRequest.getIban(), "Account");
-            }
+            case DEPOSIT, WITHDRAWAL -> validateAccountStatus(transactionRequest.getIban(), "Account");
+
             default -> throw new ValidationException("Invalid transaction type");
         }
     }
