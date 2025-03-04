@@ -2,6 +2,7 @@ package by.onlinebanking.model;
 
 import by.onlinebanking.model.enums.AccountStatus;
 import by.onlinebanking.model.enums.Currency;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -40,7 +41,7 @@ public class Account {
     @Column(nullable = false)
     private AccountStatus status = AccountStatus.ACTIVE;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(cascade = {CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 }

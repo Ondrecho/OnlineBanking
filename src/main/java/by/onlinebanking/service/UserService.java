@@ -1,48 +1,31 @@
 package by.onlinebanking.service;
 
-import by.onlinebanking.dto.RoleDto;
 import by.onlinebanking.dto.UserDto;
 import by.onlinebanking.model.Account;
 import by.onlinebanking.model.Role;
 import by.onlinebanking.model.User;
 import by.onlinebanking.repository.AccountRepository;
-import by.onlinebanking.repository.RoleRepository;
 import by.onlinebanking.repository.UserRepository;
+import by.onlinebanking.service.validation.RolesValidator;
 import jakarta.transaction.Transactional;
-import java.sql.Date;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
 public class UserService {
     private final UserRepository userRepository;
-    private final RoleRepository roleRepository;
     private final AccountRepository accountRepository;
+    private final RolesValidator rolesValidator;
 
     @Autowired
     public UserService(UserRepository userRepository,
-                       RoleRepository roleRepository,
-                       AccountRepository accountRepository) {
+                       AccountRepository accountRepository,
+                       RolesValidator rolesValidator) {
         this.userRepository = userRepository;
-        this.roleRepository = roleRepository;
         this.accountRepository = accountRepository;
-    }
-
-    private Set<Role> validateAndFindRoles(Set<RoleDto> roleDtos) {
-        return roleDtos.stream()
-                .map(roleDto -> {
-                    Optional<Role> optionalRole = roleRepository.findByName(roleDto.getName());
-                    if (optionalRole.isEmpty()) {
-                        throw new IllegalArgumentException("Role not found: " + roleDto.getName());
-                    }
-                    return optionalRole.get();
-                })
-                .collect(Collectors.toSet());
+        this.rolesValidator = rolesValidator;
     }
 
     public UserDto getUserById(Long id) {
@@ -74,13 +57,8 @@ public class UserService {
             throw new IllegalArgumentException("Invalid user data");
         }
         User user = new User();
-        user.setFullName(userDto.getFullName());
-        user.setEmail(userDto.getEmail());
-        user.setDateOfBirth(userDto.getDateOfBirth());
-        user.setPassword(userDto.getPassword());
 
-        Set<Role> validatedRoles = validateAndFindRoles(userDto.getRoles());
-        user.setRoles(validatedRoles);
+        setFields(userDto, user);
 
         User savedUser = userRepository.save(user);
         return new UserDto(savedUser);
@@ -91,44 +69,45 @@ public class UserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Cannot find user"));
 
+        setFields(userDto, user);
+
+        return new UserDto(userRepository.save(user));
+    }
+
+    private void setFields(UserDto userDto, User user) {
         user.setFullName(userDto.getFullName());
         user.setEmail(userDto.getEmail());
         user.setDateOfBirth(userDto.getDateOfBirth());
         user.setPassword(userDto.getPassword());
 
-        Set<Role> roles = validateAndFindRoles(userDto.getRoles());
+        Set<Role> roles = rolesValidator.validateAndFindRoles(userDto.getRoles());
         user.setRoles(roles);
-
-        return new UserDto(userRepository.save(user));
     }
 
     @Transactional
-    public UserDto partialUpdateUser(Long id, Map<String, Object> updates) {
+    public UserDto partialUpdateUser(Long id, UserDto userDto) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User was not found"));
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
-        updates.forEach((key, value) -> {
-            switch (key) {
-                case "fullName" -> user.setFullName((String) value);
-                case "email" -> user.setEmail((String) value);
-                case "dateOfBirth" -> user.setDateOfBirth((Date) value);
-                case "password" -> user.setPassword((String) value);
-                case "roles" -> {
-                    if (value instanceof Set<?> roleSet) {
-                        Set<RoleDto> roleDtos = roleSet.stream()
-                                .filter(RoleDto.class::isInstance)
-                                .map(RoleDto.class::cast)
-                                .collect(Collectors.toSet());
-                        user.setRoles(validateAndFindRoles(roleDtos));
-                    } else {
-                        throw new IllegalArgumentException("Invalid type for roles field");
-                    }
-                }
-                default -> throw new IllegalArgumentException("Unknown field: " + key);
-            }
-        });
+        if (userDto.getFullName() != null) {
+            user.setFullName(userDto.getFullName());
+        }
+        if (userDto.getEmail() != null) {
+            user.setEmail(userDto.getEmail());
+        }
+        if (userDto.getDateOfBirth() != null) {
+            user.setDateOfBirth(userDto.getDateOfBirth());
+        }
+        if (userDto.getPassword() != null) {
+            user.setPassword(userDto.getPassword());
+        }
+        if (userDto.getRoles() != null && !userDto.getRoles().isEmpty()) {
+            Set<Role> validatedRoles = rolesValidator.validateAndFindRoles(userDto.getRoles());
+            user.setRoles(validatedRoles);
+        }
 
-        return new UserDto(userRepository.save(user));
+        User savedUser = userRepository.save(user);
+        return new UserDto(savedUser);
     }
 
     @Transactional

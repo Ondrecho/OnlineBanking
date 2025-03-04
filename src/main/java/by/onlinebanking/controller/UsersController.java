@@ -3,7 +3,6 @@ package by.onlinebanking.controller;
 import by.onlinebanking.dto.UserDto;
 import by.onlinebanking.service.UserService;
 import java.util.List;
-import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -73,8 +72,8 @@ public class UsersController {
 
     @PatchMapping("/{userId}")
     public ResponseEntity<UserDto> partialUpdateUser(@PathVariable Long userId,
-                                                     @RequestBody Map<String, Object> updates) {
-        UserDto updatedUser = userService.partialUpdateUser(userId, updates);
+                                                     @RequestBody UserDto userDto) {
+        UserDto updatedUser = userService.partialUpdateUser(userId, userDto);
         return ResponseEntity.ok(updatedUser);
     }
 
