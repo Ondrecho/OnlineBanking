@@ -1,5 +1,6 @@
 # Online Banking REST API
-
+### Качество кода проверено SonarCloud
+[![Quality gate](https://sonarcloud.io/api/project_badges/quality_gate?project=Ondrecho_OnlineBanking)](https://sonarcloud.io/summary/new_code?id=Ondrecho_OnlineBanking)
 ## Описание
 Online Banking REST API - это серверное приложение для онлайн-банкинга, разработанное с использованием Spring Boot. API предоставляет пользователям возможность управлять своими счетами, выполнять переводы, просматривать историю операций и обменный курс валют. Администраторы могут управлять пользователями и их счетами.
 
