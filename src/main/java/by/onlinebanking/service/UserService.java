@@ -2,10 +2,13 @@ package by.onlinebanking.service;
 
 import by.onlinebanking.dto.RoleDto;
 import by.onlinebanking.dto.UserDto;
+import by.onlinebanking.model.Account;
 import by.onlinebanking.model.Role;
 import by.onlinebanking.model.User;
+import by.onlinebanking.repository.AccountRepository;
 import by.onlinebanking.repository.RoleRepository;
 import by.onlinebanking.repository.UserRepository;
+import jakarta.transaction.Transactional;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -17,12 +20,15 @@ import org.springframework.stereotype.Service;
 public class UserService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+    private final AccountRepository accountRepository;
 
     @Autowired
     public UserService(UserRepository userRepository,
-                       RoleRepository roleRepository) {
+                       RoleRepository roleRepository,
+                       AccountRepository accountRepository) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
+        this.accountRepository = accountRepository;
     }
 
     private Set<Role> validateAndFindRoles(Set<RoleDto> roleDtos) {
@@ -37,9 +43,10 @@ public class UserService {
                 .collect(Collectors.toSet());
     }
 
-    public Optional<UserDto> getUserById(Long id) {
-        Optional<User> userOptional = userRepository.findById(id);
-        return userOptional.map(UserDto::new);
+    public UserDto getUserById(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        return new UserDto(user);
     }
 
     public List<UserDto> getAllUsers() {
@@ -52,6 +59,14 @@ public class UserService {
         return users.stream().map(UserDto::new).toList();
     }
 
+    public UserDto getUserByIban(String iban) {
+        Account account = accountRepository.findByIban(iban)
+                .orElseThrow(() -> new IllegalArgumentException("Account not found"));
+
+        return new UserDto(account.getUser());
+    }
+
+    @Transactional
     public UserDto createUser(UserDto userDto) {
         if (userDto.getId() != null || userDto.getPassword() == null) {
             throw new IllegalArgumentException("Invalid user data");
@@ -99,6 +114,7 @@ public class UserService {
         return Optional.of(new UserDto(savedUser));
     }
 
+    @Transactional
     public boolean deleteUser(Long id) {
         if (!userRepository.existsById(id)) {
             return false;

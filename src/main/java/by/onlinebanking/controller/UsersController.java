@@ -35,11 +35,8 @@ public class UsersController {
 
     @GetMapping("/{userId}")
     public ResponseEntity<UserDto> getUserById(@PathVariable Long userId) {
-        Optional<UserDto> userDtoOptional = userService.getUserById(userId);
-        if (userDtoOptional.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-        return ResponseEntity.ok(userDtoOptional.get());
+        UserDto userDto = userService.getUserById(userId);
+        return ResponseEntity.ok(userDto);
     }
 
     @GetMapping("/by-name")
@@ -49,6 +46,11 @@ public class UsersController {
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok(userDtoList);
+    }
+
+    @GetMapping("/by-iban/{iban}")
+    public ResponseEntity<UserDto> getUserByIban(@PathVariable String iban) {
+        return ResponseEntity.ok(userService.getUserByIban(iban));
     }
 
     @PostMapping("/")
