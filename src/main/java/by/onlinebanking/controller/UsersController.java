@@ -3,12 +3,13 @@ package by.onlinebanking.controller;
 import by.onlinebanking.dto.UserDto;
 import by.onlinebanking.service.UserService;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -60,13 +61,21 @@ public class UsersController {
     }
 
     @PutMapping("/{userId}")
-    public ResponseEntity<UserDto> updateUser(@PathVariable Long userId,
-                                              @Validated @RequestBody UserDto userDto) {
-        Optional<UserDto> updatedUserDtoOptional = userService.updateUser(userId, userDto);
-        if (updatedUserDtoOptional.isEmpty()) {
-            return ResponseEntity.notFound().build();
+    public ResponseEntity<UserDto> fullUpdateUser(@PathVariable Long userId,
+                                                  @Validated @RequestBody UserDto userDto) {
+        if (userDto.getPassword() == null || userDto.getEmail() == null) {
+            throw new IllegalArgumentException("Missing required fields");
         }
-        return ResponseEntity.ok(updatedUserDtoOptional.get());
+
+        UserDto updatedUser = userService.fullUpdateUser(userId, userDto);
+        return ResponseEntity.ok(updatedUser);
+    }
+
+    @PatchMapping("/{userId}")
+    public ResponseEntity<UserDto> partialUpdateUser(@PathVariable Long userId,
+                                                     @RequestBody Map<String, Object> updates) {
+        UserDto updatedUser = userService.partialUpdateUser(userId, updates);
+        return ResponseEntity.ok(updatedUser);
     }
 
     @DeleteMapping("/{userId}")

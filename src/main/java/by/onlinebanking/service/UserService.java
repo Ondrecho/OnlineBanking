@@ -9,7 +9,9 @@ import by.onlinebanking.repository.AccountRepository;
 import by.onlinebanking.repository.RoleRepository;
 import by.onlinebanking.repository.UserRepository;
 import jakarta.transaction.Transactional;
+import java.sql.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -84,34 +86,49 @@ public class UserService {
         return new UserDto(savedUser);
     }
 
-    public Optional<UserDto> updateUser(Long id, UserDto userDto) {
-        Optional<User> userOptional = userRepository.findById(id);
-        if (userOptional.isEmpty()) {
-            return Optional.empty();
-        }
+    @Transactional
+    public UserDto fullUpdateUser(Long id, UserDto userDto) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Cannot find user"));
 
-        User user = userOptional.get();
+        user.setFullName(userDto.getFullName());
+        user.setEmail(userDto.getEmail());
+        user.setDateOfBirth(userDto.getDateOfBirth());
+        user.setPassword(userDto.getPassword());
 
-        if (userDto.getFullName() != null) {
-            user.setFullName(userDto.getFullName());
-        }
-        if (userDto.getEmail() != null) {
-            user.setEmail(userDto.getEmail());
-        }
-        if (userDto.getDateOfBirth() != null) {
-            user.setDateOfBirth(userDto.getDateOfBirth());
-        }
-        if (userDto.getPassword() != null) {
-            user.setPassword(userDto.getPassword());
-        }
+        Set<Role> roles = validateAndFindRoles(userDto.getRoles());
+        user.setRoles(roles);
 
-        if (userDto.getRoles() != null && !userDto.getRoles().isEmpty()) {
-            Set<Role> validatedRoles = validateAndFindRoles(userDto.getRoles());
-            user.setRoles(validatedRoles);
-        }
+        return new UserDto(userRepository.save(user));
+    }
 
-        User savedUser = userRepository.save(user);
-        return Optional.of(new UserDto(savedUser));
+    @Transactional
+    public UserDto partialUpdateUser(Long id, Map<String, Object> updates) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User was not found"));
+
+        updates.forEach((key, value) -> {
+            switch (key) {
+                case "fullName" -> user.setFullName((String) value);
+                case "email" -> user.setEmail((String) value);
+                case "dateOfBirth" -> user.setDateOfBirth((Date) value);
+                case "password" -> user.setPassword((String) value);
+                case "roles" -> {
+                    if (value instanceof Set<?> roleSet) {
+                        Set<RoleDto> roleDtos = roleSet.stream()
+                                .filter(RoleDto.class::isInstance)
+                                .map(RoleDto.class::cast)
+                                .collect(Collectors.toSet());
+                        user.setRoles(validateAndFindRoles(roleDtos));
+                    } else {
+                        throw new IllegalArgumentException("Invalid type for roles field");
+                    }
+                }
+                default -> throw new IllegalArgumentException("Unknown field: " + key);
+            }
+        });
+
+        return new UserDto(userRepository.save(user));
     }
 
     @Transactional

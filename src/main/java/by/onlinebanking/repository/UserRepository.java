@@ -16,4 +16,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @EntityGraph(attributePaths = {"roles", "accounts"})
     List<User> findAllByFullNameLike(String fullName);
+
+    boolean existsByRoles_Name(String roleName);
 }
