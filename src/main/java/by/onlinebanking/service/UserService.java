@@ -24,7 +24,9 @@ public class UserService {
     private final AccountRepository accountRepository;
 
     @Autowired
-    public UserService(UserRepository userRepository, RoleRepository roleRepository, AccountRepository accountRepository) {
+    public UserService(UserRepository userRepository,
+                       RoleRepository roleRepository,
+                       AccountRepository accountRepository) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.accountRepository = accountRepository;
