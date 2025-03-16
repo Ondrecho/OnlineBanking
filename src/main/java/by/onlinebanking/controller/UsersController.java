@@ -3,7 +3,6 @@ package by.onlinebanking.controller;
 import by.onlinebanking.dto.UserDto;
 import by.onlinebanking.service.UserService;
 import java.util.List;
-import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -61,16 +60,20 @@ public class UsersController {
     }
 
     @PutMapping("/{userId}")
-    public ResponseEntity<UserDto> updateUser(@PathVariable Long userId,
-                                              @Validated @RequestBody UserDto userDto) {
-        UserDto updatedUser = userService.replaceUser(userId, userDto);
+    public ResponseEntity<UserDto> fullUpdateUser(@PathVariable Long userId,
+                                                  @Validated @RequestBody UserDto userDto) {
+        if (userDto.getPassword() == null || userDto.getEmail() == null) {
+            throw new IllegalArgumentException("Missing required fields");
+        }
+
+        UserDto updatedUser = userService.fullUpdateUser(userId, userDto);
         return ResponseEntity.ok(updatedUser);
     }
 
     @PatchMapping("/{userId}")
-    public ResponseEntity<UserDto> updatePartially(@PathVariable Long userId,
-                                                   @RequestBody Map<String, Object> updates) {
-        UserDto updatedUser = userService.updateUserPartially(userId, updates);
+    public ResponseEntity<UserDto> partialUpdateUser(@PathVariable Long userId,
+                                                     @RequestBody UserDto userDto) {
+        UserDto updatedUser = userService.partialUpdateUser(userId, userDto);
         return ResponseEntity.ok(updatedUser);
     }
 

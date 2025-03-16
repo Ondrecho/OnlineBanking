@@ -1,14 +1,13 @@
 package by.onlinebanking.dto;
 
 import by.onlinebanking.model.Role;
-import by.onlinebanking.model.enums.RoleEnum;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
 public class RoleDto {
-    private RoleEnum name;
+    private String name;
 
     public RoleDto() {}
 

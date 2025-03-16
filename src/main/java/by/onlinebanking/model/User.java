@@ -31,7 +31,7 @@ public class User {
     private Date dateOfBirth;
     private String password;
 
-    @ManyToMany(cascade = CascadeType.MERGE,
+    @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE},
                 fetch = FetchType.LAZY)
     @JoinTable(
             name = "user_roles",
