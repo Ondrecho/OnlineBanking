@@ -44,6 +44,11 @@ public class UserService {
         return users.stream().map(UserDto::new).toList();
     }
 
+    public List<UserDto> getUsersByRole(String roleName) {
+        List<User> users = userRepository.findAllByRoleName(roleName);
+        return users.stream().map(UserDto::new).toList();
+    }
+
     public UserDto getUserByIban(String iban) {
         Account account = accountRepository.findByIban(iban)
                 .orElseThrow(() -> new IllegalArgumentException("Account not found"));

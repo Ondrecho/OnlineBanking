@@ -48,6 +48,12 @@ public class UsersController {
         return ResponseEntity.ok(userDtoList);
     }
 
+    @GetMapping("/by-role")
+    public ResponseEntity<List<UserDto>> getUserByRole(@RequestParam String roleName) {
+        List<UserDto> users = userService.getUsersByRole(roleName);
+        return ResponseEntity.ok(users);
+    }
+
     @GetMapping("/by-iban/{iban}")
     public ResponseEntity<UserDto> getUserByIban(@PathVariable String iban) {
         return ResponseEntity.ok(userService.getUserByIban(iban));
