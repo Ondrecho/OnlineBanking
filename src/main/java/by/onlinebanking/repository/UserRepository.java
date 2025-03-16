@@ -19,15 +19,11 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @EntityGraph(attributePaths = {"roles", "accounts"})
     List<User> findAllByFullNameLike(String fullName);
 
-    boolean existsByRoles_Name(String roleName);
+    boolean existsByRolesName(String roleName);
 
     @Query("SELECT u FROM User u JOIN u.roles r WHERE r.name = :roleName")
     List<User> findAllByRoleName(@Param("roleName") String roleName);
 
-    @Query(nativeQuery = true,
-            value = "SELECT u.* FROM users u " +
-                    "JOIN user_roles ur ON u.id = ur.user_id " +
-                    "JOIN roles r ON ur.role_id = r.id " +
-                    "WHERE r.name = :roleName")
-    List<User> findAllByRoleNameNative(@Param("roleName") String roleName);
+    @Query("SELECT u FROM User u JOIN u.accounts a WHERE a.iban = :iban")
+    Optional<User> findByIban(@Param("iban") String iban);
 }

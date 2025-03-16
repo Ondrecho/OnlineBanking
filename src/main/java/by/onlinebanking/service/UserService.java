@@ -1,10 +1,8 @@
 package by.onlinebanking.service;
 
 import by.onlinebanking.dto.UserDto;
-import by.onlinebanking.model.Account;
 import by.onlinebanking.model.Role;
 import by.onlinebanking.model.User;
-import by.onlinebanking.repository.AccountRepository;
 import by.onlinebanking.repository.UserRepository;
 import by.onlinebanking.service.validation.RolesValidator;
 import jakarta.transaction.Transactional;
@@ -16,44 +14,80 @@ import org.springframework.stereotype.Service;
 @Service
 public class UserService {
     private final UserRepository userRepository;
-    private final AccountRepository accountRepository;
     private final RolesValidator rolesValidator;
+
+    private final CacheService cacheService;
 
     @Autowired
     public UserService(UserRepository userRepository,
-                       AccountRepository accountRepository,
-                       RolesValidator rolesValidator) {
+                       RolesValidator rolesValidator,
+                       CacheService cacheService) {
         this.userRepository = userRepository;
-        this.accountRepository = accountRepository;
         this.rolesValidator = rolesValidator;
+        this.cacheService = cacheService;
     }
 
     public UserDto getUserById(Long id) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        return new UserDto(user);
+        String cacheKey = "user_" + id;
+        return (UserDto) cacheService.get(cacheKey)
+                .orElseGet(() -> {
+                    UserDto result = new UserDto(userRepository.findById(id)
+                            .orElseThrow(() -> new RuntimeException("User not found")));
+                    cacheService.put(cacheKey, result);
+                    return result;
+                });
     }
 
     public List<UserDto> getAllUsers() {
-        List<User> users = userRepository.findAll();
-        return users.stream().map(UserDto::new).toList();
+        String cacheKey = "all_users";
+        return (List<UserDto>) cacheService.get(cacheKey)
+                .orElseGet(() -> {
+                    List<UserDto> result = userRepository.findAll()
+                            .stream()
+                            .map(UserDto::new)
+                            .toList();
+                    cacheService.put(cacheKey, result);
+                    return result;
+                });
     }
 
-    public List<UserDto> getUserByName(String fullName) {
-        List<User> users = userRepository.findAllByFullNameLike("%" + fullName + "%");
-        return users.stream().map(UserDto::new).toList();
+    public List<UserDto> getUsersByName(String fullName) {
+        String cacheKey = "users_by_name_" + fullName;
+        return (List<UserDto>) cacheService.get(cacheKey)
+                .orElseGet(() -> {
+                    List<UserDto> result = userRepository.findAllByFullNameLike("%" + fullName + "%")
+                            .stream()
+                            .map(UserDto::new)
+                            .toList();
+                    cacheService.put(cacheKey, result);
+                    return result;
+                });
     }
 
     public List<UserDto> getUsersByRole(String roleName) {
-        List<User> users = userRepository.findAllByRoleName(roleName);
-        return users.stream().map(UserDto::new).toList();
+        String cacheKey = "users_by_role_" + roleName;
+
+        return (List<UserDto>) cacheService.get(cacheKey)
+                .orElseGet(() -> {
+                    List<UserDto> result = userRepository.findAllByRoleName(roleName)
+                            .stream()
+                            .map(UserDto::new)
+                            .toList();
+                    cacheService.put(cacheKey, result);
+                    return result;
+                });
     }
 
     public UserDto getUserByIban(String iban) {
-        Account account = accountRepository.findByIban(iban)
-                .orElseThrow(() -> new IllegalArgumentException("Account not found"));
+        String cacheKey = "user_by_iban_" + iban;
 
-        return new UserDto(account.getUser());
+        return (UserDto) cacheService.get(cacheKey)
+                .orElseGet(() -> {
+                    UserDto result = new UserDto(userRepository.findByIban(iban)
+                            .orElseThrow(() -> new IllegalArgumentException("Account not found")));
+                    cacheService.put(cacheKey, result);
+                    return result;
+                });
     }
 
     @Transactional
@@ -66,6 +100,9 @@ public class UserService {
         setFields(userDto, user);
 
         User savedUser = userRepository.save(user);
+
+        cacheService.evict("all_users");
+
         return new UserDto(savedUser);
     }
 
@@ -75,6 +112,8 @@ public class UserService {
                 .orElseThrow(() -> new RuntimeException("Cannot find user"));
 
         setFields(userDto, user);
+
+        cacheService.invalidateUserCache(id);
 
         return new UserDto(userRepository.save(user));
     }
@@ -111,8 +150,9 @@ public class UserService {
             user.setRoles(validatedRoles);
         }
 
-        User savedUser = userRepository.save(user);
-        return new UserDto(savedUser);
+        cacheService.invalidateUserCache(id);
+
+        return new UserDto(userRepository.save(user));
     }
 
     @Transactional
@@ -121,6 +161,11 @@ public class UserService {
             return false;
         }
         userRepository.deleteById(id);
+
+        cacheService.clear();
+
+        cacheService.invalidateUserCache(id);
+
         return true;
     }
 }

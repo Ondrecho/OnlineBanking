@@ -24,19 +24,30 @@ public class AccountService {
     private final AccountRepository accountRepository;
     private final UserRepository userRepository;
     private final TransactionValidator transactionValidator;
+    private final CacheService cacheService;
 
     @Autowired
     public AccountService(AccountRepository accountRepository,
                           UserRepository userRepository,
-                          TransactionValidator transactionValidator) {
+                          TransactionValidator transactionValidator,
+                          CacheService cacheService) {
         this.accountRepository = accountRepository;
         this.userRepository = userRepository;
         this.transactionValidator = transactionValidator;
+        this.cacheService = cacheService;
     }
 
     public List<AccountDto> getAccountsByUserId(Long userId) {
-        List<Account> accounts = accountRepository.findByUserId(userId);
-        return accounts.stream().map(AccountDto::new).toList();
+        String cacheKey = "accounts_by_user_" + userId;
+        return (List<AccountDto>) cacheService.get(cacheKey)
+                .orElseGet(() -> {
+                    List<AccountDto> result = accountRepository.findByUserId(userId)
+                            .stream()
+                            .map(AccountDto::new)
+                            .toList();
+                    cacheService.put(cacheKey, result);
+                    return result;
+                });
     }
 
     public AccountDto createAccount(Long userId, Currency currency) {
@@ -49,6 +60,8 @@ public class AccountService {
         account.setBalance(BigDecimal.ZERO);
         account.setCurrency(currency);
         account.setStatus(AccountStatus.ACTIVE);
+
+        cacheService.invalidateUserCache(account.getUser().getId());
 
         return new AccountDto(accountRepository.save(account));
     }
@@ -67,7 +80,10 @@ public class AccountService {
         }
 
         account.setStatus(AccountStatus.CLOSED);
+
         accountRepository.save(account);
+
+        cacheService.invalidateUserCache(account.getUser().getId());
 
         return new ResponseDto("Account is closed", LocalDateTime.now(), HttpStatus.OK);
     }
@@ -82,7 +98,10 @@ public class AccountService {
         }
 
         account.setStatus(AccountStatus.ACTIVE);
+
         accountRepository.save(account);
+
+        cacheService.invalidateUserCache(account.getUser().getId());
 
         return new ResponseDto("Account is opened", LocalDateTime.now(), HttpStatus.OK);
     }
@@ -98,6 +117,8 @@ public class AccountService {
 
         accountRepository.delete(account);
 
+        cacheService.invalidateUserCache(account.getUser().getId());
+
         return new ResponseDto("Account " + iban + " is deleted", LocalDateTime.now(), HttpStatus.OK);
     }
 
@@ -112,7 +133,6 @@ public class AccountService {
             case TRANSFER -> transfer(transactionRequest.getFromIban(),
                                       transactionRequest.getToIban(),
                                       transactionRequest.getAmount());
-            default -> throw new IllegalArgumentException("Invalid operation type");
         };
     }
 
@@ -123,6 +143,8 @@ public class AccountService {
 
         account.setBalance(account.getBalance().add(amount));
         accountRepository.save(account);
+
+        cacheService.invalidateUserCache(account.getUser().getId());
 
         return new ResponseDto("Deposit success: +" + amount + " " + account.getCurrency(),
                                 LocalDateTime.now(),
@@ -140,6 +162,8 @@ public class AccountService {
 
         account.setBalance(account.getBalance().subtract(amount));
         accountRepository.save(account);
+
+        cacheService.invalidateUserCache(account.getUser().getId());
 
         return new ResponseDto("Withdrawal success: -" + amount + " " + account.getCurrency(),
                 LocalDateTime.now(),
@@ -163,6 +187,9 @@ public class AccountService {
 
         accountRepository.save(fromAccount);
         accountRepository.save(toAccount);
+
+        cacheService.invalidateUserCache(fromAccount.getUser().getId());
+        cacheService.invalidateUserCache(toAccount.getUser().getId());
 
         return new ResponseDto("Transfer " + amount + " " + fromAccount.getCurrency() +
                 " from " + fromIban + " to " + toIban,

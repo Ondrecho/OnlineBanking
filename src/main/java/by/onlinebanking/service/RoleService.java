@@ -12,11 +12,15 @@ import org.springframework.stereotype.Service;
 public class RoleService {
     private final RoleRepository roleRepository;
     private final UserRepository userRepository;
+    private final CacheService cacheService;
 
     @Autowired
-    public RoleService(RoleRepository roleRepository, UserRepository userRepository) {
+    public RoleService(RoleRepository roleRepository,
+                       UserRepository userRepository,
+                       CacheService cacheService) {
         this.roleRepository = roleRepository;
         this.userRepository = userRepository;
+        this.cacheService = cacheService;
     }
 
     public void createRole(String name) {
@@ -27,12 +31,21 @@ public class RoleService {
         Role role = new Role();
         role.setName(name);
         roleRepository.save(role);
+
+        invalidateRolesCache();
     }
 
     public List<RoleDto> getAllRoles() {
-        return roleRepository.findAll().stream()
-                .map(RoleDto::new)
-                .toList();
+        String cacheKey = "all_roles";
+        return (List<RoleDto>) cacheService.get(cacheKey)
+                .orElseGet(() -> {
+                    List<RoleDto> result = roleRepository.findAll()
+                            .stream()
+                            .map(RoleDto::new)
+                            .toList();
+                    cacheService.put(cacheKey, result);
+                    return result;
+                });
     }
 
     public RoleDto updateRole(String name, RoleDto roleDto) {
@@ -45,6 +58,9 @@ public class RoleService {
 
         role.setName(roleDto.getName());
         Role updatedRole = roleRepository.save(role);
+
+        invalidateRolesCache();
+
         return new RoleDto(updatedRole);
     }
 
@@ -52,10 +68,16 @@ public class RoleService {
         Role role = roleRepository.findByName(name)
                 .orElseThrow(() -> new IllegalArgumentException("Role not found with name: " + name));
 
-        if (userRepository.existsByRoles_Name(name)) {
+        if (userRepository.existsByRolesName(name)) {
             throw new IllegalStateException("Cannot delete role: there are users with role " + name);
         }
 
+        invalidateRolesCache();
+
         roleRepository.delete(role);
+    }
+
+    private void invalidateRolesCache() {
+        cacheService.evict("all_roles");
     }
 }

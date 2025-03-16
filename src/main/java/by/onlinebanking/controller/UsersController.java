@@ -41,7 +41,7 @@ public class UsersController {
 
     @GetMapping("/by-name")
     public ResponseEntity<List<UserDto>> getUserByName(@RequestParam String fullName) {
-        List<UserDto> userDtoList = userService.getUserByName(fullName);
+        List<UserDto> userDtoList = userService.getUsersByName(fullName);
         if (userDtoList.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
