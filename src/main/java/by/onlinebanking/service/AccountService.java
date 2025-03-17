@@ -15,12 +15,14 @@ import jakarta.transaction.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.logging.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 @Service
 public class AccountService {
+    private static final Logger LOGGER = Logger.getLogger(AccountService.class.getName());
     private final AccountRepository accountRepository;
     private final UserRepository userRepository;
     private final TransactionValidator transactionValidator;
@@ -41,6 +43,7 @@ public class AccountService {
         String cacheKey = "accounts_by_user_" + userId;
         return (List<AccountDto>) cacheService.get(cacheKey)
                 .orElseGet(() -> {
+                    LOGGER.info("[DB] Fetching accounts_by_user from database");
                     List<AccountDto> result = accountRepository.findByUserId(userId)
                             .stream()
                             .map(AccountDto::new)

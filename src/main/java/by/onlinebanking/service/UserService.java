@@ -8,11 +8,13 @@ import by.onlinebanking.service.validation.RolesValidator;
 import jakarta.transaction.Transactional;
 import java.util.List;
 import java.util.Set;
+import java.util.logging.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
 public class UserService {
+    private static final Logger LOGGER = Logger.getLogger(UserService.class.getName());
     private final UserRepository userRepository;
     private final RolesValidator rolesValidator;
 
@@ -31,6 +33,7 @@ public class UserService {
         String cacheKey = "user_" + id;
         return (UserDto) cacheService.get(cacheKey)
                 .orElseGet(() -> {
+                    LOGGER.info("[DB] Fetching user from database");
                     UserDto result = new UserDto(userRepository.findById(id)
                             .orElseThrow(() -> new RuntimeException("User not found")));
                     cacheService.put(cacheKey, result);
@@ -42,6 +45,7 @@ public class UserService {
         String cacheKey = "all_users";
         return (List<UserDto>) cacheService.get(cacheKey)
                 .orElseGet(() -> {
+                    LOGGER.info("[DB] Fetching all users from database");
                     List<UserDto> result = userRepository.findAll()
                             .stream()
                             .map(UserDto::new)
@@ -55,6 +59,7 @@ public class UserService {
         String cacheKey = "users_by_name_" + fullName;
         return (List<UserDto>) cacheService.get(cacheKey)
                 .orElseGet(() -> {
+                    LOGGER.info("[DB] Fetching users_by_name from database");
                     List<UserDto> result = userRepository.findAllByFullNameLike("%" + fullName + "%")
                             .stream()
                             .map(UserDto::new)
@@ -69,6 +74,7 @@ public class UserService {
 
         return (List<UserDto>) cacheService.get(cacheKey)
                 .orElseGet(() -> {
+                    LOGGER.info("[DB] Fetching users_by_role from database");
                     List<UserDto> result = userRepository.findAllByRoleName(roleName)
                             .stream()
                             .map(UserDto::new)
@@ -83,6 +89,7 @@ public class UserService {
 
         return (UserDto) cacheService.get(cacheKey)
                 .orElseGet(() -> {
+                    LOGGER.info("[DB] Fetching users_by_iban from database");
                     UserDto result = new UserDto(userRepository.findByIban(iban)
                             .orElseThrow(() -> new IllegalArgumentException("Account not found")));
                     cacheService.put(cacheKey, result);

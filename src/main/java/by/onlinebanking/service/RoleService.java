@@ -5,11 +5,13 @@ import by.onlinebanking.model.Role;
 import by.onlinebanking.repository.RoleRepository;
 import by.onlinebanking.repository.UserRepository;
 import java.util.List;
+import java.util.logging.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
 public class RoleService {
+    private static final Logger LOGGER = Logger.getLogger(RoleService.class.getName());
     private final RoleRepository roleRepository;
     private final UserRepository userRepository;
     private final CacheService cacheService;
@@ -39,6 +41,7 @@ public class RoleService {
         String cacheKey = "all_roles";
         return (List<RoleDto>) cacheService.get(cacheKey)
                 .orElseGet(() -> {
+                    LOGGER.info("[DB] Fetching roles from database");
                     List<RoleDto> result = roleRepository.findAll()
                             .stream()
                             .map(RoleDto::new)
