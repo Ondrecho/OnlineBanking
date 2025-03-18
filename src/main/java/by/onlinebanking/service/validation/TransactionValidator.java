@@ -3,11 +3,9 @@ package by.onlinebanking.service.validation;
 import by.onlinebanking.dto.TransactionRequestDto;
 import by.onlinebanking.model.Account;
 import by.onlinebanking.model.enums.AccountStatus;
-import by.onlinebanking.model.enums.Currency;
 import by.onlinebanking.model.enums.TransactionType;
 import by.onlinebanking.repository.AccountRepository;
 import jakarta.validation.ValidationException;
-import java.math.BigDecimal;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -22,10 +20,6 @@ public class TransactionValidator {
 
     public void validateTransaction(TransactionRequestDto transactionRequest) {
         validateAccountStatuses(transactionRequest);
-
-        validateAmount(transactionRequest.getAmount());
-
-        validateCurrency(transactionRequest.getCurrency());
 
         if (transactionRequest.getTransactionType() == TransactionType.TRANSFER) {
             validateTransfer(transactionRequest);
@@ -49,27 +43,11 @@ public class TransactionValidator {
     }
 
     private void validateAccountStatus(String iban, String accountType) {
-        if (iban == null) {
-            throw new ValidationException(accountType + " IBAN cannot be null");
-        }
-
         Account account = accountRepository.findByIban(iban)
                 .orElseThrow(() -> new ValidationException(accountType + " not found: " + iban));
 
         if (account.getStatus() == AccountStatus.CLOSED) {
             throw new ValidationException(accountType + " is closed: " + iban);
-        }
-    }
-
-    private void validateAmount(BigDecimal amount) {
-        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new ValidationException("Amount must be greater than zero");
-        }
-    }
-
-    private void validateCurrency(Currency currency) {
-        if (currency == null) {
-            throw new ValidationException("Currency cannot be null");
         }
     }
 
@@ -98,10 +76,6 @@ public class TransactionValidator {
     }
 
     private void validateAccountOperation(TransactionRequestDto transactionRequest) {
-        if (transactionRequest.getIban() == null) {
-            throw new ValidationException("Iban cannot be empty");
-        }
-
         Account account = accountRepository.findByIban(transactionRequest.getIban())
                 .orElseThrow(() -> new ValidationException("Account not found"));
 

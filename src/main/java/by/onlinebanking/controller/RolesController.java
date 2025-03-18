@@ -2,6 +2,8 @@ package by.onlinebanking.controller;
 
 import by.onlinebanking.dto.RoleDto;
 import by.onlinebanking.service.RoleService;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -22,7 +24,7 @@ public class RolesController {
     private final RoleService roleService;
 
     @PostMapping
-    public ResponseEntity<RoleDto> createRole(@RequestBody RoleDto roleDto) {
+    public ResponseEntity<RoleDto> createRole(@Valid @RequestBody RoleDto roleDto) {
         roleService.createRole(roleDto.getName());
         return ResponseEntity.status(HttpStatus.CREATED).body(roleDto);
     }
@@ -33,12 +35,13 @@ public class RolesController {
     }
 
     @PutMapping("/{name}")
-    public ResponseEntity<RoleDto> updateRole(@PathVariable String name, @RequestBody RoleDto roleDto) {
+    public ResponseEntity<RoleDto> updateRole(@PathVariable @NotBlank String name,
+                                              @Valid @RequestBody RoleDto roleDto) {
         return ResponseEntity.ok(roleService.updateRole(name, roleDto));
     }
 
     @DeleteMapping("/{name}")
-    public ResponseEntity<Void> deleteRole(@PathVariable String name) {
+    public ResponseEntity<Void> deleteRole(@PathVariable @NotBlank String name) {
         roleService.deleteRole(name);
         return ResponseEntity.noContent().build();
     }

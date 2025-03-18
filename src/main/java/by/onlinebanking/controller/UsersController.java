@@ -2,6 +2,9 @@ package by.onlinebanking.controller;
 
 import by.onlinebanking.dto.UserDto;
 import by.onlinebanking.service.UserService;
+import by.onlinebanking.service.validation.IbanFormat;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/users")
+@Validated
 public class UsersController {
     private final UserService userService;
 
@@ -40,7 +44,7 @@ public class UsersController {
     }
 
     @GetMapping("/by-name")
-    public ResponseEntity<List<UserDto>> getUserByName(@RequestParam String fullName) {
+    public ResponseEntity<List<UserDto>> getUserByName(@RequestParam @NotBlank String fullName) {
         List<UserDto> userDtoList = userService.getUsersByName(fullName);
         if (userDtoList.isEmpty()) {
             return ResponseEntity.notFound().build();
@@ -49,25 +53,25 @@ public class UsersController {
     }
 
     @GetMapping("/by-role")
-    public ResponseEntity<List<UserDto>> getUserByRole(@RequestParam String roleName) {
+    public ResponseEntity<List<UserDto>> getUserByRole(@RequestParam @NotBlank String roleName) {
         List<UserDto> users = userService.getUsersByRole(roleName);
         return ResponseEntity.ok(users);
     }
 
     @GetMapping("/by-iban/{iban}")
-    public ResponseEntity<UserDto> getUserByIban(@PathVariable String iban) {
+    public ResponseEntity<UserDto> getUserByIban(@PathVariable @IbanFormat String iban) {
         return ResponseEntity.ok(userService.getUserByIban(iban));
     }
 
     @PostMapping("/")
-    public ResponseEntity<UserDto> createUser(@Validated @RequestBody UserDto userDto) {
+    public ResponseEntity<UserDto> createUser(@Valid @RequestBody UserDto userDto) {
         UserDto createdUserDto = userService.createUser(userDto);
         return ResponseEntity.status(201).body(createdUserDto);
     }
 
     @PutMapping("/{userId}")
     public ResponseEntity<UserDto> fullUpdateUser(@PathVariable Long userId,
-                                                  @Validated @RequestBody UserDto userDto) {
+                                                  @Valid @RequestBody UserDto userDto) {
         if (userDto.getPassword() == null || userDto.getEmail() == null) {
             throw new IllegalArgumentException("Missing required fields");
         }
@@ -78,7 +82,7 @@ public class UsersController {
 
     @PatchMapping("/{userId}")
     public ResponseEntity<UserDto> partialUpdateUser(@PathVariable Long userId,
-                                                     @RequestBody UserDto userDto) {
+                                                     @Valid @RequestBody UserDto userDto) {
         UserDto updatedUser = userService.partialUpdateUser(userId, userDto);
         return ResponseEntity.ok(updatedUser);
     }

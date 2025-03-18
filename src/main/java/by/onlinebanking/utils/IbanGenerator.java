@@ -21,15 +21,12 @@ public class IbanGenerator {
     }
 
     public static String calculateIbanCheckDigits(String ibanWithoutCheckDigits) {
-        // Переносим код страны и банк в конец, заменяем буквы на числа (A = 10, B = 11, ..., Z = 35)
         String reformattedIban = ibanWithoutCheckDigits.substring(4) + ibanWithoutCheckDigits.substring(0, 4);
         String numericIban = convertLettersToNumbers(reformattedIban);
 
-        // Вычисляем остаток от деления на 97
         BigInteger ibanNumber = new BigInteger(numericIban);
         int remainder = ibanNumber.mod(BigInteger.valueOf(97)).intValue();
 
-        // Контрольное число IBAN = 98 - остаток
         int checkDigits = 98 - remainder;
         return String.format("%02d", checkDigits);
     }
@@ -38,7 +35,7 @@ public class IbanGenerator {
         StringBuilder numericIban = new StringBuilder();
         for (char ch : input.toCharArray()) {
             if (Character.isLetter(ch)) {
-                numericIban.append((ch - 'A' + 10)); // A = 10, B = 11, ..., Z = 35
+                numericIban.append((ch - 'A' + 10));
             } else {
                 numericIban.append(ch);
             }
