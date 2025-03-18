@@ -15,44 +15,37 @@ import jakarta.transaction.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.logging.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 @Service
 public class AccountService {
-    private static final Logger LOGGER = Logger.getLogger(AccountService.class.getName());
     private final AccountRepository accountRepository;
     private final UserRepository userRepository;
     private final TransactionValidator transactionValidator;
-    private final CacheService cacheService;
 
     @Autowired
     public AccountService(AccountRepository accountRepository,
                           UserRepository userRepository,
-                          TransactionValidator transactionValidator,
-                          CacheService cacheService) {
+                          TransactionValidator transactionValidator) {
         this.accountRepository = accountRepository;
         this.userRepository = userRepository;
         this.transactionValidator = transactionValidator;
-        this.cacheService = cacheService;
     }
 
+    @Cacheable(value = "userAccounts", key = "#userId")
     public List<AccountDto> getAccountsByUserId(Long userId) {
-        String cacheKey = "accounts_by_user_" + userId;
-        return (List<AccountDto>) cacheService.get(cacheKey)
-                .orElseGet(() -> {
-                    LOGGER.info("[DB] Fetching accounts_by_user from database");
-                    List<AccountDto> result = accountRepository.findByUserId(userId)
-                            .stream()
-                            .map(AccountDto::new)
-                            .toList();
-                    cacheService.put(cacheKey, result);
-                    return result;
-                });
+        return accountRepository.findByUserId(userId)
+                .stream()
+                .map(AccountDto::new)
+                .toList();
     }
 
+    @Transactional
+    @CacheEvict(value = {"allUsers", "usersByName", "usersByRole"}, allEntries = true)
     public AccountDto createAccount(Long userId, Currency currency) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
@@ -64,12 +57,11 @@ public class AccountService {
         account.setCurrency(currency);
         account.setStatus(AccountStatus.ACTIVE);
 
-        cacheService.invalidateUserCache(account.getUser().getId());
-
         return new AccountDto(accountRepository.save(account));
     }
 
     @Transactional
+    @CacheEvict(value = {"allUsers", "usersByName", "usersByRole"}, allEntries = true)
     public ResponseDto closeAccount(String iban) {
         Account account = accountRepository.findByIban(iban)
                         .orElseThrow(() -> new IllegalArgumentException("Account was not found"));
@@ -83,15 +75,17 @@ public class AccountService {
         }
 
         account.setStatus(AccountStatus.CLOSED);
-
         accountRepository.save(account);
 
-        cacheService.invalidateUserCache(account.getUser().getId());
-
-        return new ResponseDto("Account is closed", LocalDateTime.now(), HttpStatus.OK);
+        return new ResponseDto(
+                "Account is closed",
+                LocalDateTime.now(),
+                HttpStatus.OK
+        );
     }
 
     @Transactional
+    @CacheEvict(value = {"allUsers", "usersByName", "usersByRole"}, allEntries = true)
     public ResponseDto openAccount(String iban) {
         Account account = accountRepository.findByIban(iban)
                 .orElseThrow(() -> new IllegalArgumentException("Account was not found"));
@@ -101,15 +95,17 @@ public class AccountService {
         }
 
         account.setStatus(AccountStatus.ACTIVE);
-
         accountRepository.save(account);
 
-        cacheService.invalidateUserCache(account.getUser().getId());
-
-        return new ResponseDto("Account is opened", LocalDateTime.now(), HttpStatus.OK);
+        return new ResponseDto(
+                "Account is opened",
+                LocalDateTime.now(),
+                HttpStatus.OK
+        );
     }
 
     @Transactional
+    @CacheEvict(value = {"allUsers", "usersByName", "usersByRole"}, allEntries = true)
     public ResponseDto deleteAccount(String iban) {
         Account account = accountRepository.findByIban(iban)
                 .orElseThrow(() -> new IllegalArgumentException("Account not found"));
@@ -120,12 +116,15 @@ public class AccountService {
 
         accountRepository.delete(account);
 
-        cacheService.invalidateUserCache(account.getUser().getId());
-
-        return new ResponseDto("Account " + iban + " is deleted", LocalDateTime.now(), HttpStatus.OK);
+        return new ResponseDto(
+                "Account " + iban + " is deleted",
+                LocalDateTime.now(),
+                HttpStatus.OK
+                );
     }
 
     @Transactional
+    @CacheEvict(value = {"allUsers", "usersByName", "usersByRole"}, allEntries = true)
     public ResponseDto processTransaction(TransactionRequestDto transactionRequest) {
         transactionValidator.validateTransaction(transactionRequest);
 
@@ -147,11 +146,11 @@ public class AccountService {
         account.setBalance(account.getBalance().add(amount));
         accountRepository.save(account);
 
-        cacheService.invalidateUserCache(account.getUser().getId());
-
-        return new ResponseDto("Deposit success: +" + amount + " " + account.getCurrency(),
-                                LocalDateTime.now(),
-                                HttpStatus.OK);
+        return new ResponseDto(
+                "Deposit success: +" + amount + " " + account.getCurrency(),
+                        LocalDateTime.now(),
+                        HttpStatus.OK
+                );
     }
 
     @Transactional
@@ -166,11 +165,11 @@ public class AccountService {
         account.setBalance(account.getBalance().subtract(amount));
         accountRepository.save(account);
 
-        cacheService.invalidateUserCache(account.getUser().getId());
-
-        return new ResponseDto("Withdrawal success: -" + amount + " " + account.getCurrency(),
+        return new ResponseDto(
+                "Withdrawal success: -" + amount + " " + account.getCurrency(),
                 LocalDateTime.now(),
-                HttpStatus.OK);
+                HttpStatus.OK
+        );
     }
 
     @Transactional
@@ -191,10 +190,8 @@ public class AccountService {
         accountRepository.save(fromAccount);
         accountRepository.save(toAccount);
 
-        cacheService.invalidateUserCache(fromAccount.getUser().getId());
-        cacheService.invalidateUserCache(toAccount.getUser().getId());
-
-        return new ResponseDto("Transfer " + amount + " " + fromAccount.getCurrency() +
+        return new ResponseDto(
+                "Transfer " + amount + " " + fromAccount.getCurrency() +
                 " from " + fromIban + " to " + toIban,
                 LocalDateTime.now(),
                 HttpStatus.OK);

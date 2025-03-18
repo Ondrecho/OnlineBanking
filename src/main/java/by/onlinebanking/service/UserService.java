@@ -8,96 +8,59 @@ import by.onlinebanking.service.validation.RolesValidator;
 import jakarta.transaction.Transactional;
 import java.util.List;
 import java.util.Set;
-import java.util.logging.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 @Service
 public class UserService {
-    private static final Logger LOGGER = Logger.getLogger(UserService.class.getName());
     private final UserRepository userRepository;
     private final RolesValidator rolesValidator;
 
-    private final CacheService cacheService;
-
     @Autowired
     public UserService(UserRepository userRepository,
-                       RolesValidator rolesValidator,
-                       CacheService cacheService) {
+                       RolesValidator rolesValidator) {
         this.userRepository = userRepository;
         this.rolesValidator = rolesValidator;
-        this.cacheService = cacheService;
     }
 
     public UserDto getUserById(Long id) {
-        String cacheKey = "user_" + id;
-        return (UserDto) cacheService.get(cacheKey)
-                .orElseGet(() -> {
-                    LOGGER.info("[DB] Fetching user from database");
-                    UserDto result = new UserDto(userRepository.findById(id)
-                            .orElseThrow(() -> new RuntimeException("User not found")));
-                    cacheService.put(cacheKey, result);
-                    return result;
-                });
+        return new UserDto(userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found")));
     }
 
+    @Cacheable(value = "allUsers")
     public List<UserDto> getAllUsers() {
-        String cacheKey = "all_users";
-        return (List<UserDto>) cacheService.get(cacheKey)
-                .orElseGet(() -> {
-                    LOGGER.info("[DB] Fetching all users from database");
-                    List<UserDto> result = userRepository.findAll()
-                            .stream()
-                            .map(UserDto::new)
-                            .toList();
-                    cacheService.put(cacheKey, result);
-                    return result;
-                });
+        return userRepository.findAll()
+                .stream()
+                .map(UserDto::new)
+                .toList();
     }
 
+    @Cacheable(value = "usersByName", key = "#fullName")
     public List<UserDto> getUsersByName(String fullName) {
-        String cacheKey = "users_by_name_" + fullName;
-        return (List<UserDto>) cacheService.get(cacheKey)
-                .orElseGet(() -> {
-                    LOGGER.info("[DB] Fetching users_by_name from database");
-                    List<UserDto> result = userRepository.findAllByFullNameLike("%" + fullName + "%")
-                            .stream()
-                            .map(UserDto::new)
-                            .toList();
-                    cacheService.put(cacheKey, result);
-                    return result;
-                });
+        return userRepository.findAllByFullNameLike("%" + fullName + "%")
+                .stream()
+                .map(UserDto::new)
+                .toList();
     }
 
+    @Cacheable(value = "usersByRole", key = "#roleName")
     public List<UserDto> getUsersByRole(String roleName) {
-        String cacheKey = "users_by_role_" + roleName;
-
-        return (List<UserDto>) cacheService.get(cacheKey)
-                .orElseGet(() -> {
-                    LOGGER.info("[DB] Fetching users_by_role from database");
-                    List<UserDto> result = userRepository.findAllByRoleName(roleName)
-                            .stream()
-                            .map(UserDto::new)
-                            .toList();
-                    cacheService.put(cacheKey, result);
-                    return result;
-                });
+        return userRepository.findAllByRoleName(roleName)
+                .stream()
+                .map(UserDto::new)
+                .toList();
     }
 
     public UserDto getUserByIban(String iban) {
-        String cacheKey = "user_by_iban_" + iban;
-
-        return (UserDto) cacheService.get(cacheKey)
-                .orElseGet(() -> {
-                    LOGGER.info("[DB] Fetching users_by_iban from database");
-                    UserDto result = new UserDto(userRepository.findByIban(iban)
+        return new UserDto(userRepository.findByIban(iban)
                             .orElseThrow(() -> new IllegalArgumentException("Account not found")));
-                    cacheService.put(cacheKey, result);
-                    return result;
-                });
     }
 
     @Transactional
+    @CacheEvict(value = {"allUsers", "usersByName", "usersByRole"}, allEntries = true)
     public UserDto createUser(UserDto userDto) {
         if (userDto.getId() != null || userDto.getPassword() == null) {
             throw new IllegalArgumentException("Invalid user data");
@@ -108,19 +71,16 @@ public class UserService {
 
         User savedUser = userRepository.save(user);
 
-        cacheService.evict("all_users");
-
         return new UserDto(savedUser);
     }
 
     @Transactional
+    @CacheEvict(value = {"allUsers", "usersByName", "usersByRole"}, allEntries = true)
     public UserDto fullUpdateUser(Long id, UserDto userDto) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Cannot find user"));
 
         setFields(userDto, user);
-
-        cacheService.invalidateUserCache(id);
 
         return new UserDto(userRepository.save(user));
     }
@@ -136,6 +96,7 @@ public class UserService {
     }
 
     @Transactional
+    @CacheEvict(value = {"allUsers", "usersByName", "usersByRole"}, allEntries = true)
     public UserDto partialUpdateUser(Long id, UserDto userDto) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -157,21 +118,16 @@ public class UserService {
             user.setRoles(validatedRoles);
         }
 
-        cacheService.invalidateUserCache(id);
-
         return new UserDto(userRepository.save(user));
     }
 
     @Transactional
+    @CacheEvict(value = {"allUsers", "usersByName", "usersByRole"}, allEntries = true)
     public boolean deleteUser(Long id) {
         if (!userRepository.existsById(id)) {
             return false;
         }
         userRepository.deleteById(id);
-
-        cacheService.clear();
-
-        cacheService.invalidateUserCache(id);
 
         return true;
     }
