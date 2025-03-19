@@ -6,9 +6,11 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 
 @Getter
 @Setter
+@ToString
 public class RoleDto {
     @NotBlank(message = "Role name is required")
     @Size(min = 2, max = 50, message = "Role name must be 2-50 characters")

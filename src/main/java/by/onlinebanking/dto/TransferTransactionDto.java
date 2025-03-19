@@ -4,9 +4,11 @@ import by.onlinebanking.service.validation.annotations.IbanFormat;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 
 @Getter
 @Setter
+@ToString
 public class TransferTransactionDto extends BaseTransactionDto {
     @NotBlank(message = "From IBAN is required")
     @IbanFormat(message = "Invalid From IBAN format")

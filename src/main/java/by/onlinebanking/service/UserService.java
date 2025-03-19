@@ -20,8 +20,8 @@ import org.springframework.validation.annotation.Validated;
 
 @Service
 public class UserService {
-    private static final String USERID = "userId";
-    private static final String USENOTFOUND = "User not found";
+    private static final String USER_ID = "userId";
+    private static final String USER_NOT_FOUND = "User not found";
 
     private final UserRepository userRepository;
     private final RolesValidator rolesValidator;
@@ -35,8 +35,8 @@ public class UserService {
 
     public UserDto getUserById(Long id) {
         return new UserDto(userRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException(USENOTFOUND)
-                        .addDetail(USERID, id)));
+                .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND)
+                        .addDetail(USER_ID, id)));
     }
 
     @Cacheable(value = "allUsers")
@@ -95,8 +95,8 @@ public class UserService {
     @CacheEvict(value = {"allUsers", "usersByName", "usersByRole"}, allEntries = true)
     public UserDto fullUpdateUser(Long id, UserDto userDto) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException(USENOTFOUND)
-                        .addDetail(USERID, id));
+                .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND)
+                        .addDetail(USER_ID, id));
 
         setFields(userDto, user);
 
@@ -117,8 +117,8 @@ public class UserService {
     @CacheEvict(value = {"allUsers", "usersByName", "usersByRole"}, allEntries = true)
     public UserDto partialUpdateUser(Long id, @Validated(OnPatch.class) UserDto userDto) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException(USENOTFOUND)
-                        .addDetail(USERID, id));
+                .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND)
+                        .addDetail(USER_ID, id));
 
         if (userDto.getFullName() != null) {
             user.setFullName(userDto.getFullName());
@@ -144,8 +144,8 @@ public class UserService {
     @CacheEvict(value = {"allUsers", "usersByName", "usersByRole"}, allEntries = true)
     public void deleteUser(Long id) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException(USENOTFOUND)
-                        .addDetail(USERID, id));
+                .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND)
+                        .addDetail(USER_ID, id));
         userRepository.delete(user);
     }
 }

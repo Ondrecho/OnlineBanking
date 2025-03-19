@@ -9,6 +9,7 @@ import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 
 @Getter
 @Setter
@@ -23,6 +24,7 @@ import lombok.Setter;
         @JsonSubTypes.Type(value = SingleAccountTransactionDto.class, name = "WITHDRAWAL"),
         @JsonSubTypes.Type(value = TransferTransactionDto.class, name = "TRANSFER")
 })
+@ToString
 public abstract class BaseTransactionDto {
     @NotNull(message = "Transaction type is required")
     private TransactionType transactionType;
