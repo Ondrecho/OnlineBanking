@@ -34,7 +34,7 @@ public class UsersController {
         this.userService = userService;
     }
 
-    @GetMapping("/")
+    @GetMapping
     public ResponseEntity<List<UserDto>> getAllUsers() {
         List<UserDto> userDtoList = userService.getAllUsers();
         return ResponseEntity.ok(userDtoList);
@@ -79,7 +79,7 @@ public class UsersController {
         return ResponseEntity.ok(userDto);
     }
 
-    @PostMapping("/")
+    @PostMapping
     public ResponseEntity<UserDto> createUser(@Validated(OnCreate.class) @RequestBody UserDto userDto) {
         UserDto createdUserDto = userService.createUser(userDto);
         return ResponseEntity.status(201).body(createdUserDto);
