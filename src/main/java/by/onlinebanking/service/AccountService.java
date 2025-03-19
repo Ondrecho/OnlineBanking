@@ -21,7 +21,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -42,10 +41,15 @@ public class AccountService {
         this.transactionValidator = transactionValidator;
     }
 
-    @Cacheable(value = "userAccounts", key = "#userId")
     public List<AccountDto> getAccountsByUserId(Long userId) {
-        return accountRepository.findByUserId(userId)
-                .stream()
+        List<Account> accounts = accountRepository.findByUserId(userId);
+
+        if (accounts == null || accounts.isEmpty()) {
+            throw new NotFoundException("No accounts found for user")
+                    .addDetail("userId", userId);
+        }
+
+        return accounts.stream()
                 .map(AccountDto::new)
                 .toList();
     }
