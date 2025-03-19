@@ -3,7 +3,7 @@ package by.onlinebanking.dto;
 import by.onlinebanking.model.Account;
 import by.onlinebanking.model.enums.AccountStatus;
 import by.onlinebanking.model.enums.Currency;
-import by.onlinebanking.service.validation.IbanFormat;
+import by.onlinebanking.service.validation.annotations.IbanFormat;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

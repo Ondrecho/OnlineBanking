@@ -1,6 +1,8 @@
 package by.onlinebanking.service;
 
 import by.onlinebanking.dto.RoleDto;
+import by.onlinebanking.exception.BusinessException;
+import by.onlinebanking.exception.NotFoundException;
 import by.onlinebanking.model.Role;
 import by.onlinebanking.repository.RoleRepository;
 import by.onlinebanking.repository.UserRepository;
@@ -11,6 +13,8 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class RoleService {
+    private static final String ROLENAME = "roleName";
+
     private final RoleRepository roleRepository;
     private final UserRepository userRepository;
 
@@ -21,13 +25,14 @@ public class RoleService {
         this.userRepository = userRepository;
     }
 
-    public void createRole(String name) {
-        if (roleRepository.existsByName(name)) {
-            throw new IllegalArgumentException("Role with name " + name + " already exists");
+    public void createRole(String roleName) {
+        if (roleRepository.existsByName(roleName)) {
+            throw new BusinessException("Role already exists")
+                    .addDetail(ROLENAME, roleName);
         }
 
         Role role = new Role();
-        role.setName(name);
+        role.setName(roleName);
         roleRepository.save(role);
     }
 
@@ -39,26 +44,32 @@ public class RoleService {
     }
 
     @CacheEvict(value = {"allUsers", "usersByName", "usersByRole"}, allEntries = true)
-    public RoleDto updateRole(String name, RoleDto roleDto) {
-        Role role = roleRepository.findByName(name)
-                .orElseThrow(() -> new IllegalArgumentException("Role not found with name: " + name));
+    public RoleDto updateRole(String roleName, RoleDto roleDto) {
+        Role role = roleRepository.findByName(roleName)
+                .orElseThrow(() -> new NotFoundException("Role not found")
+                        .addDetail(ROLENAME, roleName));
 
-        if (roleRepository.existsByName(roleDto.getName())) {
-            throw new IllegalArgumentException("Role with name " + roleDto.getName() + " already exists");
+        String newRoleName = roleDto.getName();
+
+        if (roleRepository.existsByName(newRoleName)) {
+            throw new BusinessException("Role already exists")
+                    .addDetail(ROLENAME, newRoleName);
         }
 
-        role.setName(roleDto.getName());
+        role.setName(newRoleName);
         Role updatedRole = roleRepository.save(role);
 
         return new RoleDto(updatedRole);
     }
 
-    public void deleteRole(String name) {
-        Role role = roleRepository.findByName(name)
-                .orElseThrow(() -> new IllegalArgumentException("Role not found with name: " + name));
+    public void deleteRole(String roleName) {
+        Role role = roleRepository.findByName(roleName)
+                .orElseThrow(() -> new NotFoundException("Role not found")
+                        .addDetail(ROLENAME, roleName));
 
-        if (userRepository.existsByRolesName(name)) {
-            throw new IllegalStateException("Cannot delete role: there are users with role " + name);
+        if (userRepository.existsByRolesName(roleName)) {
+            throw new BusinessException("Cannot delete role with assigned users")
+                    .addDetail("usersCount", userRepository.countByRolesName(roleName));
         }
 
         roleRepository.delete(role);

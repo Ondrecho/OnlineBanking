@@ -1,10 +1,14 @@
 package by.onlinebanking.service;
 
 import by.onlinebanking.dto.UserDto;
+import by.onlinebanking.exception.BusinessException;
+import by.onlinebanking.exception.NotFoundException;
+import by.onlinebanking.exception.ValidationException;
 import by.onlinebanking.model.Role;
 import by.onlinebanking.model.User;
 import by.onlinebanking.repository.UserRepository;
 import by.onlinebanking.service.validation.RolesValidator;
+import by.onlinebanking.service.validation.interfaces.OnPatch;
 import jakarta.transaction.Transactional;
 import java.util.List;
 import java.util.Set;
@@ -12,9 +16,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
+import org.springframework.validation.annotation.Validated;
 
 @Service
 public class UserService {
+    private static final String USERID = "userId";
+    private static final String USENOTFOUND = "User not found";
+
     private final UserRepository userRepository;
     private final RolesValidator rolesValidator;
 
@@ -27,7 +35,8 @@ public class UserService {
 
     public UserDto getUserById(Long id) {
         return new UserDto(userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found")));
+                .orElseThrow(() -> new NotFoundException(USENOTFOUND)
+                        .addDetail(USERID, id)));
     }
 
     @Cacheable(value = "allUsers")
@@ -56,15 +65,23 @@ public class UserService {
 
     public UserDto getUserByIban(String iban) {
         return new UserDto(userRepository.findByIban(iban)
-                            .orElseThrow(() -> new IllegalArgumentException("Account not found")));
+                            .orElseThrow(() -> new NotFoundException("Account not found")
+                                    .addDetail("iban", iban)));
     }
 
     @Transactional
     @CacheEvict(value = {"allUsers", "usersByName", "usersByRole"}, allEntries = true)
     public UserDto createUser(UserDto userDto) {
-        if (userDto.getId() != null || userDto.getPassword() == null) {
-            throw new IllegalArgumentException("Invalid user data");
+        if (userDto.getId() != null) {
+            throw new ValidationException("User ID must be null for creation")
+                    .addDetail("invalidField", "id");
         }
+
+        if (userRepository.existsByEmail(userDto.getEmail())) {
+            throw new BusinessException("User with email already exists")
+                    .addDetail("email", userDto.getEmail());
+        }
+
         User user = new User();
 
         setFields(userDto, user);
@@ -78,7 +95,8 @@ public class UserService {
     @CacheEvict(value = {"allUsers", "usersByName", "usersByRole"}, allEntries = true)
     public UserDto fullUpdateUser(Long id, UserDto userDto) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Cannot find user"));
+                .orElseThrow(() -> new NotFoundException(USENOTFOUND)
+                        .addDetail(USERID, id));
 
         setFields(userDto, user);
 
@@ -97,9 +115,10 @@ public class UserService {
 
     @Transactional
     @CacheEvict(value = {"allUsers", "usersByName", "usersByRole"}, allEntries = true)
-    public UserDto partialUpdateUser(Long id, UserDto userDto) {
+    public UserDto partialUpdateUser(Long id, @Validated(OnPatch.class) UserDto userDto) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new NotFoundException(USENOTFOUND)
+                        .addDetail(USERID, id));
 
         if (userDto.getFullName() != null) {
             user.setFullName(userDto.getFullName());
@@ -123,12 +142,10 @@ public class UserService {
 
     @Transactional
     @CacheEvict(value = {"allUsers", "usersByName", "usersByRole"}, allEntries = true)
-    public boolean deleteUser(Long id) {
-        if (!userRepository.existsById(id)) {
-            return false;
-        }
-        userRepository.deleteById(id);
-
-        return true;
+    public void deleteUser(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException(USENOTFOUND)
+                        .addDetail(USERID, id));
+        userRepository.delete(user);
     }
 }

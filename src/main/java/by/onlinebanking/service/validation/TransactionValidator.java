@@ -1,6 +1,8 @@
 package by.onlinebanking.service.validation;
 
-import by.onlinebanking.dto.TransactionRequestDto;
+import by.onlinebanking.dto.BaseTransactionDto;
+import by.onlinebanking.dto.SingleAccountTransactionDto;
+import by.onlinebanking.dto.TransferTransactionDto;
 import by.onlinebanking.model.Account;
 import by.onlinebanking.model.enums.AccountStatus;
 import by.onlinebanking.model.enums.TransactionType;
@@ -18,25 +20,27 @@ public class TransactionValidator {
         this.accountRepository = accountRepository;
     }
 
-    public void validateTransaction(TransactionRequestDto transactionRequest) {
+    public void validateTransaction(BaseTransactionDto transactionRequest) {
         validateAccountStatuses(transactionRequest);
 
         if (transactionRequest.getTransactionType() == TransactionType.TRANSFER) {
-            validateTransfer(transactionRequest);
+            validateTransfer((TransferTransactionDto) transactionRequest);
         } else {
-            validateAccountOperation(transactionRequest);
+            validateAccountOperation((SingleAccountTransactionDto) transactionRequest);
         }
     }
 
-    private void validateAccountStatuses(TransactionRequestDto transactionRequest) {
-        TransactionType transactionType = transactionRequest.getTransactionType();
-
-        switch (transactionType) {
+    private void validateAccountStatuses(BaseTransactionDto transactionRequest) {
+        switch (transactionRequest.getTransactionType()) {
             case TRANSFER -> {
-                validateAccountStatus(transactionRequest.getFromIban(), "Sender account");
-                validateAccountStatus(transactionRequest.getToIban(), "Receiver account");
+                TransferTransactionDto transferRequest = (TransferTransactionDto) transactionRequest;
+                validateAccountStatus(transferRequest.getFromIban(), "Sender account");
+                validateAccountStatus(transferRequest.getToIban(), "Receiver account");
             }
-            case DEPOSIT, WITHDRAWAL -> validateAccountStatus(transactionRequest.getIban(), "Account");
+            case DEPOSIT, WITHDRAWAL -> {
+                SingleAccountTransactionDto singleRequest = (SingleAccountTransactionDto) transactionRequest;
+                validateAccountStatus(singleRequest.getIban(), "Account");
+            }
 
             default -> throw new ValidationException("Invalid transaction type");
         }
@@ -51,7 +55,7 @@ public class TransactionValidator {
         }
     }
 
-    private void validateTransfer(TransactionRequestDto transactionRequest) {
+    private void validateTransfer(TransferTransactionDto transactionRequest) {
         if (transactionRequest.getFromIban().equals(transactionRequest.getToIban())) {
             throw new ValidationException("Sender and receiver account cannot be the same");
         }
@@ -75,7 +79,7 @@ public class TransactionValidator {
         }
     }
 
-    private void validateAccountOperation(TransactionRequestDto transactionRequest) {
+    private void validateAccountOperation(SingleAccountTransactionDto transactionRequest) {
         Account account = accountRepository.findByIban(transactionRequest.getIban())
                 .orElseThrow(() -> new ValidationException("Account not found"));
 

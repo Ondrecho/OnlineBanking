@@ -19,7 +19,11 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @EntityGraph(attributePaths = {"roles", "accounts"})
     List<User> findAllByFullNameLike(String fullName);
 
+    boolean existsByEmail(String email);
+
     boolean existsByRolesName(String roleName);
+
+    int countByRolesName(String roleName);
 
     @Query("SELECT u FROM User u JOIN u.roles r WHERE r.name = :roleName")
     List<User> findAllByRoleName(@Param("roleName") String roleName);

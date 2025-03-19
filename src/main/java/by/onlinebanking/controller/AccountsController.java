@@ -1,11 +1,11 @@
 package by.onlinebanking.controller;
 
 import by.onlinebanking.dto.AccountDto;
+import by.onlinebanking.dto.BaseTransactionDto;
 import by.onlinebanking.dto.ResponseDto;
-import by.onlinebanking.dto.TransactionRequestDto;
 import by.onlinebanking.model.enums.Currency;
 import by.onlinebanking.service.AccountService;
-import by.onlinebanking.service.validation.IbanFormat;
+import by.onlinebanking.service.validation.annotations.IbanFormat;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
@@ -58,7 +58,7 @@ public class AccountsController {
     }
 
     @PostMapping("/transaction")
-    public ResponseEntity<ResponseDto> handleTransaction(@Valid @RequestBody TransactionRequestDto request) {
+    public ResponseEntity<ResponseDto> handleTransaction(@Valid @RequestBody BaseTransactionDto request) {
         ResponseDto response = accountService.processTransaction(request);
         return ResponseEntity.ok(response);
     }

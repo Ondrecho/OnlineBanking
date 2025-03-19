@@ -1,5 +1,6 @@
 package by.onlinebanking.service.validation;
 
+import by.onlinebanking.service.validation.annotations.IbanFormat;
 import by.onlinebanking.utils.IbanGenerator;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
