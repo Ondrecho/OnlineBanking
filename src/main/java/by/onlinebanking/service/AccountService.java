@@ -2,8 +2,8 @@ package by.onlinebanking.service;
 
 import by.onlinebanking.dto.AccountDto;
 import by.onlinebanking.dto.BaseTransactionDto;
-import by.onlinebanking.dto.ResponseDto;
 import by.onlinebanking.dto.SingleAccountTransactionDto;
+import by.onlinebanking.dto.TransactionResponseDto;
 import by.onlinebanking.dto.TransferTransactionDto;
 import by.onlinebanking.exception.BusinessException;
 import by.onlinebanking.exception.NotFoundException;
@@ -73,7 +73,7 @@ public class AccountService {
 
     @Transactional
     @CacheEvict(value = {"allUsers", "usersByName", "usersByRole"}, allEntries = true)
-    public ResponseDto closeAccount(String iban) {
+    public TransactionResponseDto closeAccount(String iban) {
         Account account = accountRepository.findByIban(iban)
                 .orElseThrow(() -> new NotFoundException(ACCOUNT_NOT_FOUND)
                         .addDetail("iban", iban));
@@ -91,7 +91,7 @@ public class AccountService {
         account.setStatus(AccountStatus.CLOSED);
         accountRepository.save(account);
 
-        return new ResponseDto(
+        return new TransactionResponseDto(
                 "Account is closed",
                 LocalDateTime.now(),
                 HttpStatus.OK
@@ -100,7 +100,7 @@ public class AccountService {
 
     @Transactional
     @CacheEvict(value = {"allUsers", "usersByName", "usersByRole"}, allEntries = true)
-    public ResponseDto openAccount(String iban) {
+    public TransactionResponseDto openAccount(String iban) {
         Account account = accountRepository.findByIban(iban)
                 .orElseThrow(() -> new NotFoundException(ACCOUNT_NOT_FOUND)
                         .addDetail("iban", iban));
@@ -113,7 +113,7 @@ public class AccountService {
         account.setStatus(AccountStatus.ACTIVE);
         accountRepository.save(account);
 
-        return new ResponseDto(
+        return new TransactionResponseDto(
                 "Account is opened",
                 LocalDateTime.now(),
                 HttpStatus.OK
@@ -122,7 +122,7 @@ public class AccountService {
 
     @Transactional
     @CacheEvict(value = {"allUsers", "usersByName", "usersByRole"}, allEntries = true)
-    public ResponseDto deleteAccount(String iban) {
+    public TransactionResponseDto deleteAccount(String iban) {
         Account account = accountRepository.findByIban(iban)
                 .orElseThrow(() -> new NotFoundException(ACCOUNT_NOT_FOUND)
                         .addDetail("iban", iban));
@@ -134,7 +134,7 @@ public class AccountService {
 
         accountRepository.delete(account);
 
-        return new ResponseDto(
+        return new TransactionResponseDto(
                 "Account " + iban + " is deleted",
                 LocalDateTime.now(),
                 HttpStatus.OK
@@ -143,7 +143,7 @@ public class AccountService {
 
     @Transactional
     @CacheEvict(value = {"allUsers", "usersByName", "usersByRole"}, allEntries = true)
-    public ResponseDto processTransaction(BaseTransactionDto transaction) {
+    public TransactionResponseDto processTransaction(BaseTransactionDto transaction) {
         transactionValidator.validateTransaction(transaction);
 
         return switch (transaction.getTransactionType()) {
@@ -163,7 +163,7 @@ public class AccountService {
     }
 
     @Transactional
-    public ResponseDto deposit(String iban, BigDecimal amount) {
+    public TransactionResponseDto deposit(String iban, BigDecimal amount) {
         Account account = accountRepository.findByIban(iban)
                 .orElseThrow(() -> new NotFoundException(ACCOUNT_NOT_FOUND)
                         .addDetail("iban", iban));
@@ -171,7 +171,7 @@ public class AccountService {
         account.setBalance(account.getBalance().add(amount));
         accountRepository.save(account);
 
-        return new ResponseDto(
+        return new TransactionResponseDto(
                 "Deposit success: +" + amount + " " + account.getCurrency(),
                         LocalDateTime.now(),
                         HttpStatus.OK
@@ -179,7 +179,7 @@ public class AccountService {
     }
 
     @Transactional
-    public ResponseDto withdraw(String iban, BigDecimal amount) {
+    public TransactionResponseDto withdraw(String iban, BigDecimal amount) {
         Account account = accountRepository.findByIban(iban)
                 .orElseThrow(() -> new NotFoundException(ACCOUNT_NOT_FOUND)
                         .addDetail("iban", iban));
@@ -194,7 +194,7 @@ public class AccountService {
         account.setBalance(account.getBalance().subtract(amount));
         accountRepository.save(account);
 
-        return new ResponseDto(
+        return new TransactionResponseDto(
                 "Withdrawal success: -" + amount + " " + account.getCurrency(),
                 LocalDateTime.now(),
                 HttpStatus.OK
@@ -202,7 +202,7 @@ public class AccountService {
     }
 
     @Transactional
-    public ResponseDto transfer(String fromIban, String toIban, BigDecimal amount) {
+    public TransactionResponseDto transfer(String fromIban, String toIban, BigDecimal amount) {
         Account fromAccount = accountRepository.findByIban(fromIban)
                 .orElseThrow(() -> new NotFoundException("Sender account not found")
                         .addDetail("fromIban", fromIban));
@@ -224,7 +224,7 @@ public class AccountService {
         accountRepository.save(fromAccount);
         accountRepository.save(toAccount);
 
-        return new ResponseDto(
+        return new TransactionResponseDto(
                 "Transfer " + amount + " " + fromAccount.getCurrency() +
                 " from " + fromIban + " to " + toIban,
                 LocalDateTime.now(),

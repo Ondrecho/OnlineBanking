@@ -11,7 +11,7 @@ import org.springframework.http.HttpStatus;
 @Setter
 @AllArgsConstructor
 @ToString
-public class ResponseDto {
+public class TransactionResponseDto {
     private String message;
     private LocalDateTime timeStamp;
     private HttpStatus status;

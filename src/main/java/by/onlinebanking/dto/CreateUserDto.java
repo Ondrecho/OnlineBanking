@@ -37,6 +37,7 @@ public class CreateUserDto implements UserBaseDto {
     @Pattern(regexp = "^(?=.*[a-zA-Z])(?=.*\\d).+$",
             message = "Password must contain at least one letter and one number"
     )
+    @ToString.Exclude
     private String password;
 
     @NotEmpty(message = "At least one role is required")

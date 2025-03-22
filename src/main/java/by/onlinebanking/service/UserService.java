@@ -74,18 +74,20 @@ public class UserService {
     @Transactional
     @CacheEvict(value = {"allUsers", "usersByName", "usersByRole"}, allEntries = true)
     public UserResponseDto createUser(CreateUserDto userDto) {
-        if (userRepository.existsByEmail(userDto.getEmail())) {
-            throw new BusinessException("User with email already exists")
-                    .addDetail("email", userDto.getEmail());
-        }
+        checkEmail(userDto.getEmail());
 
         User user = new User();
 
         setUserFields(userDto, user);
 
-        User savedUser = userRepository.save(user);
+        return new UserResponseDto(userRepository.save(user));
+    }
 
-        return new UserResponseDto(savedUser);
+    private void checkEmail(String userDto) {
+        if (userRepository.existsByEmail(userDto)) {
+            throw new BusinessException("User with email already exists")
+                    .addDetail("email", userDto);
+        }
     }
 
     @Transactional
@@ -94,6 +96,8 @@ public class UserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND)
                         .addDetail(USER_ID, id));
+
+        checkEmail(userDto.getEmail());
 
         setUserFields(userDto, user);
 
@@ -116,6 +120,8 @@ public class UserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND)
                         .addDetail(USER_ID, id));
+
+        checkEmail(userDto.getEmail());
 
         updateUserFields(userDto, user);
 

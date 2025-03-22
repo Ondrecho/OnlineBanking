@@ -2,7 +2,7 @@ package by.onlinebanking.controller;
 
 import by.onlinebanking.dto.AccountDto;
 import by.onlinebanking.dto.BaseTransactionDto;
-import by.onlinebanking.dto.ResponseDto;
+import by.onlinebanking.dto.TransactionResponseDto;
 import by.onlinebanking.model.enums.Currency;
 import by.onlinebanking.service.AccountService;
 import by.onlinebanking.validation.annotations.IbanFormat;
@@ -46,26 +46,28 @@ public class AccountsController {
     }
 
     @PatchMapping("/{iban}/close")
-    public ResponseEntity<ResponseDto> closeAccount(@PathVariable @IbanFormat String iban) {
-        ResponseDto response = accountService.closeAccount(iban);
+    public ResponseEntity<TransactionResponseDto> closeAccount(@PathVariable @IbanFormat String iban) {
+        TransactionResponseDto response = accountService.closeAccount(iban);
         return ResponseEntity.ok(response);
     }
 
     @PatchMapping("/{iban}/open")
-    public ResponseEntity<ResponseDto> openAccount(@PathVariable @IbanFormat String iban) {
-        ResponseDto response = accountService.openAccount(iban);
+    public ResponseEntity<TransactionResponseDto> openAccount(@PathVariable @IbanFormat String iban) {
+        TransactionResponseDto response = accountService.openAccount(iban);
         return ResponseEntity.ok(response);
     }
 
     @PostMapping("/transaction")
-    public ResponseEntity<ResponseDto> handleTransaction(@Valid @RequestBody BaseTransactionDto request) {
-        ResponseDto response = accountService.processTransaction(request);
+    public ResponseEntity<TransactionResponseDto> handleTransaction(
+            @Valid @RequestBody BaseTransactionDto request
+    ) {
+        TransactionResponseDto response = accountService.processTransaction(request);
         return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{iban}")
-    public ResponseEntity<ResponseDto> deleteAccount(@PathVariable @IbanFormat String iban) {
-        ResponseDto response = accountService.deleteAccount(iban);
+    public ResponseEntity<TransactionResponseDto> deleteAccount(@PathVariable @IbanFormat String iban) {
+        TransactionResponseDto response = accountService.deleteAccount(iban);
         return ResponseEntity.ok(response);
     }
 }

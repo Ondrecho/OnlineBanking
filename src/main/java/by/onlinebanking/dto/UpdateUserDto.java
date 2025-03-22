@@ -48,6 +48,7 @@ public class UpdateUserDto implements UserBaseDto {
             regexp = "^(?=.*[a-zA-Z])(?=.*\\d).+$",
             message = "Password must contain at least one letter and one number"
     )
+    @ToString.Exclude
     private String password;
 
     public UpdateUserDto() {

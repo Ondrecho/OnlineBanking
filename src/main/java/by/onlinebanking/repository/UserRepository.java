@@ -21,9 +21,11 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     boolean existsByEmail(String email);
 
-    boolean existsByRolesName(String roleName);
+    @Query("SELECT COUNT(u) > 0 FROM User u JOIN u.roles r WHERE r.id = :roleId")
+    boolean existsByRolesId(@Param("roleId") Long roleId);
 
-    int countByRolesName(String roleName);
+    @Query("SELECT COUNT(u) FROM User u JOIN u.roles r WHERE r.id = :roleId")
+    long countByRolesId(@Param("roleId") Long roleId);
 
     @Query("SELECT u FROM User u JOIN u.roles r WHERE r.name = :roleName")
     List<User> findAllByRoleName(@Param("roleName") String roleName);

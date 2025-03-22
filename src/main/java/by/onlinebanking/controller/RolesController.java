@@ -3,7 +3,6 @@ package by.onlinebanking.controller;
 import by.onlinebanking.dto.RoleDto;
 import by.onlinebanking.service.RoleService;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -25,8 +24,8 @@ public class RolesController {
 
     @PostMapping
     public ResponseEntity<RoleDto> createRole(@Valid @RequestBody RoleDto roleDto) {
-        roleService.createRole(roleDto.getName());
-        return ResponseEntity.status(HttpStatus.CREATED).body(roleDto);
+        RoleDto createdRoleDto = roleService.createRole(roleDto.getName());
+        return ResponseEntity.status(HttpStatus.CREATED).body(createdRoleDto);
     }
 
     @GetMapping
@@ -34,15 +33,15 @@ public class RolesController {
         return ResponseEntity.ok(roleService.getAllRoles());
     }
 
-    @PutMapping("/{name}")
-    public ResponseEntity<RoleDto> updateRole(@PathVariable @NotBlank String name,
+    @PutMapping("/{roleId}")
+    public ResponseEntity<RoleDto> updateRole(@PathVariable Long roleId,
                                               @Valid @RequestBody RoleDto roleDto) {
-        return ResponseEntity.ok(roleService.updateRole(name, roleDto));
+        return ResponseEntity.ok(roleService.updateRole(roleId, roleDto));
     }
 
-    @DeleteMapping("/{name}")
-    public ResponseEntity<Void> deleteRole(@PathVariable @NotBlank String name) {
-        roleService.deleteRole(name);
+    @DeleteMapping("/{roleId}")
+    public ResponseEntity<Void> deleteRole(@PathVariable Long roleId) {
+        roleService.deleteRole(roleId);
         return ResponseEntity.noContent().build();
     }
 }

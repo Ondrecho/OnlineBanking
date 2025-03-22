@@ -13,8 +13,6 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class RoleService {
-    private static final String ROLENAME = "roleName";
-
     private final RoleRepository roleRepository;
     private final UserRepository userRepository;
 
@@ -25,15 +23,17 @@ public class RoleService {
         this.userRepository = userRepository;
     }
 
-    public void createRole(String roleName) {
+    public RoleDto createRole(String roleName) {
         if (roleRepository.existsByName(roleName)) {
             throw new BusinessException("Role already exists")
-                    .addDetail(ROLENAME, roleName);
+                    .addDetail("roleName", roleName);
         }
 
         Role role = new Role();
+
         role.setName(roleName);
-        roleRepository.save(role);
+
+        return new RoleDto(roleRepository.save(role));
     }
 
     public List<RoleDto> getAllRoles() {
@@ -44,16 +44,16 @@ public class RoleService {
     }
 
     @CacheEvict(value = {"allUsers", "usersByName", "usersByRole"}, allEntries = true)
-    public RoleDto updateRole(String roleName, RoleDto roleDto) {
-        Role role = roleRepository.findByName(roleName)
+    public RoleDto updateRole(Long roleId, RoleDto roleDto) {
+        Role role = roleRepository.findById(roleId)
                 .orElseThrow(() -> new NotFoundException("Role not found")
-                        .addDetail(ROLENAME, roleName));
+                        .addDetail("roleId", roleId));
 
         String newRoleName = roleDto.getName();
 
-        if (roleRepository.existsByName(newRoleName)) {
+        if (roleRepository.existsByNameAndIdNot(newRoleName, roleId)) {
             throw new BusinessException("Role already exists")
-                    .addDetail(ROLENAME, newRoleName);
+                    .addDetail("roleName", newRoleName);
         }
 
         role.setName(newRoleName);
@@ -62,14 +62,14 @@ public class RoleService {
         return new RoleDto(updatedRole);
     }
 
-    public void deleteRole(String roleName) {
-        Role role = roleRepository.findByName(roleName)
+    public void deleteRole(Long roleId) {
+        Role role = roleRepository.findById(roleId)
                 .orElseThrow(() -> new NotFoundException("Role not found")
-                        .addDetail(ROLENAME, roleName));
+                        .addDetail("roleId", roleId));
 
-        if (userRepository.existsByRolesName(roleName)) {
+        if (userRepository.existsByRolesId(roleId)) {
             throw new BusinessException("Cannot delete role with assigned users")
-                    .addDetail("usersCount", userRepository.countByRolesName(roleName));
+                    .addDetail("usersCount", userRepository.countByRolesId(roleId));
         }
 
         roleRepository.delete(role);
