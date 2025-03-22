@@ -11,7 +11,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PastOrPresent;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
-import java.sql.Date;
+import java.time.LocalDate;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.Getter;
@@ -36,7 +36,7 @@ public class UpdateUserDto implements UserBaseDto {
     @NotNull(groups = {OnUpdate.class}, message = "Date of birth is required")
     @PastOrPresent(groups = {OnUpdate.class, OnPatch.class},
             message = "Date of birth cannot be in the future")
-    private Date dateOfBirth;
+    private LocalDate dateOfBirth;
 
     @NotEmpty(groups = {OnUpdate.class}, message = "At least one role is required")
     private Set<@Valid RoleDto> roles;

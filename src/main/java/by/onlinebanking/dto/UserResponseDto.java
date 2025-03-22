@@ -1,7 +1,7 @@
 package by.onlinebanking.dto;
 
 import by.onlinebanking.model.User;
-import java.sql.Date;
+import java.time.LocalDate;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.Getter;
@@ -15,7 +15,7 @@ public class UserResponseDto {
     private Long id;
     private String fullName;
     private String email;
-    private Date dateOfBirth;
+    private LocalDate dateOfBirth;
     private Set<RoleDto> roles;
     private Set<AccountDto> accounts;
 

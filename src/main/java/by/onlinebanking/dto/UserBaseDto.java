@@ -1,6 +1,6 @@
 package by.onlinebanking.dto;
 
-import java.sql.Date;
+import java.time.LocalDate;
 import java.util.Set;
 
 public interface UserBaseDto {
@@ -8,7 +8,7 @@ public interface UserBaseDto {
 
     String getEmail();
 
-    Date getDateOfBirth();
+    LocalDate getDateOfBirth();
 
     String getPassword();
 
