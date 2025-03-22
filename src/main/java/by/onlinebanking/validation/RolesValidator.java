@@ -1,4 +1,4 @@
-package by.onlinebanking.service.validation;
+package by.onlinebanking.validation;
 
 import by.onlinebanking.dto.RoleDto;
 import by.onlinebanking.model.Role;

@@ -12,9 +12,11 @@ import java.sql.Date;
 import java.util.Set;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 
 @Getter
 @Setter
+@ToString
 public class CreateUserDto implements UserBaseDto {
     @NotBlank(message = "Full name is required")
     @Size(min = 2, max = 100, message = "Full name must be between 2 and 100 characters")
@@ -27,7 +29,7 @@ public class CreateUserDto implements UserBaseDto {
     private Date dateOfBirth;
 
     @NotBlank(message = "Email is required")
-    @Email(message = "Email should be valid")
+    @Email(regexp = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$", message = "Email should be valid")
     private String email;
 
     @NotBlank(message = "Password is required")
@@ -39,4 +41,8 @@ public class CreateUserDto implements UserBaseDto {
 
     @NotEmpty(message = "At least one role is required")
     private Set<@Valid RoleDto> roles;
+
+    public CreateUserDto() {
+        // for JSON serialization
+    }
 }

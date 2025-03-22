@@ -13,8 +13,8 @@ import by.onlinebanking.model.enums.AccountStatus;
 import by.onlinebanking.model.enums.Currency;
 import by.onlinebanking.repository.AccountRepository;
 import by.onlinebanking.repository.UserRepository;
-import by.onlinebanking.service.validation.TransactionValidator;
 import by.onlinebanking.utils.IbanGenerator;
+import by.onlinebanking.validation.TransactionValidator;
 import jakarta.transaction.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -26,7 +26,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class AccountService {
-    private static final String ACCOUNTNOTFOUND = "Account not found";
+    private static final String ACCOUNT_NOT_FOUND = "Account not found";
 
     private final AccountRepository accountRepository;
     private final UserRepository userRepository;
@@ -75,7 +75,7 @@ public class AccountService {
     @CacheEvict(value = {"allUsers", "usersByName", "usersByRole"}, allEntries = true)
     public ResponseDto closeAccount(String iban) {
         Account account = accountRepository.findByIban(iban)
-                .orElseThrow(() -> new NotFoundException(ACCOUNTNOTFOUND)
+                .orElseThrow(() -> new NotFoundException(ACCOUNT_NOT_FOUND)
                         .addDetail("iban", iban));
 
         if (account.getStatus() == AccountStatus.CLOSED) {
@@ -102,7 +102,7 @@ public class AccountService {
     @CacheEvict(value = {"allUsers", "usersByName", "usersByRole"}, allEntries = true)
     public ResponseDto openAccount(String iban) {
         Account account = accountRepository.findByIban(iban)
-                .orElseThrow(() -> new NotFoundException(ACCOUNTNOTFOUND)
+                .orElseThrow(() -> new NotFoundException(ACCOUNT_NOT_FOUND)
                         .addDetail("iban", iban));
 
         if (account.getStatus() != AccountStatus.CLOSED) {
@@ -124,7 +124,7 @@ public class AccountService {
     @CacheEvict(value = {"allUsers", "usersByName", "usersByRole"}, allEntries = true)
     public ResponseDto deleteAccount(String iban) {
         Account account = accountRepository.findByIban(iban)
-                .orElseThrow(() -> new NotFoundException(ACCOUNTNOTFOUND)
+                .orElseThrow(() -> new NotFoundException(ACCOUNT_NOT_FOUND)
                         .addDetail("iban", iban));
 
         if (account.getStatus() != AccountStatus.CLOSED) {
@@ -165,7 +165,7 @@ public class AccountService {
     @Transactional
     public ResponseDto deposit(String iban, BigDecimal amount) {
         Account account = accountRepository.findByIban(iban)
-                .orElseThrow(() -> new NotFoundException(ACCOUNTNOTFOUND)
+                .orElseThrow(() -> new NotFoundException(ACCOUNT_NOT_FOUND)
                         .addDetail("iban", iban));
 
         account.setBalance(account.getBalance().add(amount));
@@ -181,7 +181,7 @@ public class AccountService {
     @Transactional
     public ResponseDto withdraw(String iban, BigDecimal amount) {
         Account account = accountRepository.findByIban(iban)
-                .orElseThrow(() -> new NotFoundException(ACCOUNTNOTFOUND)
+                .orElseThrow(() -> new NotFoundException(ACCOUNT_NOT_FOUND)
                         .addDetail("iban", iban));
 
         if (amount.compareTo(BigDecimal.ZERO) <= 0 || account.getBalance().compareTo(amount) < 0) {

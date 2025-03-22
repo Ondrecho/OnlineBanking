@@ -5,7 +5,7 @@ import by.onlinebanking.dto.BaseTransactionDto;
 import by.onlinebanking.dto.ResponseDto;
 import by.onlinebanking.model.enums.Currency;
 import by.onlinebanking.service.AccountService;
-import by.onlinebanking.service.validation.annotations.IbanFormat;
+import by.onlinebanking.validation.annotations.IbanFormat;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;

@@ -1,6 +1,6 @@
-package by.onlinebanking.service.validation.annotations;
+package by.onlinebanking.validation.annotations;
 
-import by.onlinebanking.service.validation.IbanValidator;
+import by.onlinebanking.validation.IbanValidator;
 import jakarta.validation.Constraint;
 import jakarta.validation.Payload;
 import java.lang.annotation.Documented;

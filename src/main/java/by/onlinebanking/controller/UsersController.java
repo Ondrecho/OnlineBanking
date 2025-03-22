@@ -5,9 +5,9 @@ import by.onlinebanking.dto.UpdateUserDto;
 import by.onlinebanking.dto.UserResponseDto;
 import by.onlinebanking.exception.NotFoundException;
 import by.onlinebanking.service.UserService;
-import by.onlinebanking.service.validation.annotations.IbanFormat;
-import by.onlinebanking.service.validation.interfaces.OnPatch;
-import by.onlinebanking.service.validation.interfaces.OnUpdate;
+import by.onlinebanking.validation.annotations.IbanFormat;
+import by.onlinebanking.validation.interfaces.OnPatch;
+import by.onlinebanking.validation.interfaces.OnUpdate;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import java.util.List;
@@ -91,10 +91,6 @@ public class UsersController {
             @PathVariable Long userId,
             @Validated(OnUpdate.class) @RequestBody UpdateUserDto userDto
     ) {
-        if (userDto.getPassword() == null || userDto.getEmail() == null) {
-            throw new IllegalArgumentException("Missing required fields");
-        }
-
         UserResponseDto updatedUserDto = userService.fullUpdateUser(userId, userDto);
         return ResponseEntity.ok(updatedUserDto);
     }

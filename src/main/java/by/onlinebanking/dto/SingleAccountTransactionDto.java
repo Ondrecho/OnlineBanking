@@ -1,6 +1,6 @@
 package by.onlinebanking.dto;
 
-import by.onlinebanking.service.validation.annotations.IbanFormat;
+import by.onlinebanking.validation.annotations.IbanFormat;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.Setter;

@@ -1,8 +1,8 @@
 package by.onlinebanking.dto;
 
 import by.onlinebanking.model.User;
-import by.onlinebanking.service.validation.interfaces.OnPatch;
-import by.onlinebanking.service.validation.interfaces.OnUpdate;
+import by.onlinebanking.validation.interfaces.OnPatch;
+import by.onlinebanking.validation.interfaces.OnUpdate;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -16,9 +16,11 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 
 @Getter
 @Setter
+@ToString
 public class UpdateUserDto implements UserBaseDto {
     @NotBlank(groups = {OnUpdate.class}, message = "Full name is required")
     @Size(groups = {OnUpdate.class, OnPatch.class}, min = 2, max = 100,
@@ -47,6 +49,10 @@ public class UpdateUserDto implements UserBaseDto {
             message = "Password must contain at least one letter and one number"
     )
     private String password;
+
+    public UpdateUserDto() {
+        // for JSON serialisation
+    }
 
     public UpdateUserDto(User user) {
         this.fullName = user.getFullName();
