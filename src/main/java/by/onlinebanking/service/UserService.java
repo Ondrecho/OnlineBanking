@@ -1,9 +1,11 @@
 package by.onlinebanking.service;
 
-import by.onlinebanking.dto.UserDto;
+import by.onlinebanking.dto.CreateUserDto;
+import by.onlinebanking.dto.UpdateUserDto;
+import by.onlinebanking.dto.UserBaseDto;
+import by.onlinebanking.dto.UserResponseDto;
 import by.onlinebanking.exception.BusinessException;
 import by.onlinebanking.exception.NotFoundException;
-import by.onlinebanking.exception.ValidationException;
 import by.onlinebanking.model.Role;
 import by.onlinebanking.model.User;
 import by.onlinebanking.repository.UserRepository;
@@ -33,50 +35,45 @@ public class UserService {
         this.rolesValidator = rolesValidator;
     }
 
-    public UserDto getUserById(Long id) {
-        return new UserDto(userRepository.findById(id)
+    public UserResponseDto getUserById(Long id) {
+        return new UserResponseDto(userRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND)
                         .addDetail(USER_ID, id)));
     }
 
     @Cacheable(value = "allUsers")
-    public List<UserDto> getAllUsers() {
+    public List<UserResponseDto> getAllUsers() {
         return userRepository.findAll()
                 .stream()
-                .map(UserDto::new)
+                .map(UserResponseDto::new)
                 .toList();
     }
 
     @Cacheable(value = "usersByName", key = "#fullName")
-    public List<UserDto> getUsersByName(String fullName) {
+    public List<UserResponseDto> getUsersByName(String fullName) {
         return userRepository.findAllByFullNameLike("%" + fullName + "%")
                 .stream()
-                .map(UserDto::new)
+                .map(UserResponseDto::new)
                 .toList();
     }
 
     @Cacheable(value = "usersByRole", key = "#roleName")
-    public List<UserDto> getUsersByRole(String roleName) {
+    public List<UserResponseDto> getUsersByRole(String roleName) {
         return userRepository.findAllByRoleName(roleName)
                 .stream()
-                .map(UserDto::new)
+                .map(UserResponseDto::new)
                 .toList();
     }
 
-    public UserDto getUserByIban(String iban) {
-        return new UserDto(userRepository.findByIban(iban)
+    public UserResponseDto getUserByIban(String iban) {
+        return new UserResponseDto(userRepository.findByIban(iban)
                             .orElseThrow(() -> new NotFoundException("Account not found")
                                     .addDetail("iban", iban)));
     }
 
     @Transactional
     @CacheEvict(value = {"allUsers", "usersByName", "usersByRole"}, allEntries = true)
-    public UserDto createUser(UserDto userDto) {
-        if (userDto.getId() != null) {
-            throw new ValidationException("User ID must be null for creation")
-                    .addDetail("invalidField", "id");
-        }
-
+    public UserResponseDto createUser(CreateUserDto userDto) {
         if (userRepository.existsByEmail(userDto.getEmail())) {
             throw new BusinessException("User with email already exists")
                     .addDetail("email", userDto.getEmail());
@@ -84,26 +81,26 @@ public class UserService {
 
         User user = new User();
 
-        setFields(userDto, user);
+        setUserFields(userDto, user);
 
         User savedUser = userRepository.save(user);
 
-        return new UserDto(savedUser);
+        return new UserResponseDto(savedUser);
     }
 
     @Transactional
     @CacheEvict(value = {"allUsers", "usersByName", "usersByRole"}, allEntries = true)
-    public UserDto fullUpdateUser(Long id, UserDto userDto) {
+    public UserResponseDto fullUpdateUser(Long id, UpdateUserDto userDto) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND)
                         .addDetail(USER_ID, id));
 
-        setFields(userDto, user);
+        setUserFields(userDto, user);
 
-        return new UserDto(userRepository.save(user));
+        return new UserResponseDto(userRepository.save(user));
     }
 
-    private void setFields(UserDto userDto, User user) {
+    private void setUserFields(UserBaseDto userDto, User user) {
         user.setFullName(userDto.getFullName());
         user.setEmail(userDto.getEmail());
         user.setDateOfBirth(userDto.getDateOfBirth());
@@ -115,29 +112,25 @@ public class UserService {
 
     @Transactional
     @CacheEvict(value = {"allUsers", "usersByName", "usersByRole"}, allEntries = true)
-    public UserDto partialUpdateUser(Long id, @Validated(OnPatch.class) UserDto userDto) {
+    public UserResponseDto partialUpdateUser(Long id, @Validated(OnPatch.class) UpdateUserDto userDto) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND)
                         .addDetail(USER_ID, id));
 
-        if (userDto.getFullName() != null) {
-            user.setFullName(userDto.getFullName());
-        }
-        if (userDto.getEmail() != null) {
-            user.setEmail(userDto.getEmail());
-        }
-        if (userDto.getDateOfBirth() != null) {
-            user.setDateOfBirth(userDto.getDateOfBirth());
-        }
-        if (userDto.getPassword() != null) {
-            user.setPassword(userDto.getPassword());
-        }
+        updateUserFields(userDto, user);
+
+        return new UserResponseDto(userRepository.save(user));
+    }
+
+    private void updateUserFields(UpdateUserDto userDto, User user) {
+        if (userDto.getFullName() != null) user.setFullName(userDto.getFullName());
+        if (userDto.getEmail() != null) user.setEmail(userDto.getEmail());
+        if (userDto.getDateOfBirth() != null) user.setDateOfBirth(userDto.getDateOfBirth());
+        if (userDto.getPassword() != null) user.setPassword(userDto.getPassword());
         if (userDto.getRoles() != null && !userDto.getRoles().isEmpty()) {
             Set<Role> validatedRoles = rolesValidator.validateAndFindRoles(userDto.getRoles());
             user.setRoles(validatedRoles);
         }
-
-        return new UserDto(userRepository.save(user));
     }
 
     @Transactional

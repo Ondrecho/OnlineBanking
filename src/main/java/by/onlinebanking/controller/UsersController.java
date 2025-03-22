@@ -1,12 +1,14 @@
 package by.onlinebanking.controller;
 
-import by.onlinebanking.dto.UserDto;
+import by.onlinebanking.dto.CreateUserDto;
+import by.onlinebanking.dto.UpdateUserDto;
+import by.onlinebanking.dto.UserResponseDto;
 import by.onlinebanking.exception.NotFoundException;
 import by.onlinebanking.service.UserService;
 import by.onlinebanking.service.validation.annotations.IbanFormat;
-import by.onlinebanking.service.validation.interfaces.OnCreate;
 import by.onlinebanking.service.validation.interfaces.OnPatch;
 import by.onlinebanking.service.validation.interfaces.OnUpdate;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,72 +37,75 @@ public class UsersController {
     }
 
     @GetMapping
-    public ResponseEntity<List<UserDto>> getAllUsers() {
-        List<UserDto> userDtoList = userService.getAllUsers();
-        return ResponseEntity.ok(userDtoList);
+    public ResponseEntity<List<UserResponseDto>> getAllUsers() {
+        return ResponseEntity.ok(userService.getAllUsers());
     }
 
     @GetMapping("/{userId}")
-    public ResponseEntity<UserDto> getUserById(@PathVariable Long userId) {
-        UserDto userDto = userService.getUserById(userId);
-        if (userDto == null) {
+    public ResponseEntity<UserResponseDto> getUserById(@PathVariable Long userId) {
+        UserResponseDto response = userService.getUserById(userId);
+        if (response == null) {
             throw new NotFoundException("User not found")
                     .addDetail("userId", userId);
         }
-        return ResponseEntity.ok(userDto);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/by-name")
-    public ResponseEntity<List<UserDto>> getUserByName(@RequestParam @NotBlank String fullName) {
-        List<UserDto> userDtoList = userService.getUsersByName(fullName);
-        if (userDtoList.isEmpty()) {
+    public ResponseEntity<List<UserResponseDto>> getUserByName(@RequestParam @NotBlank String fullName) {
+        List<UserResponseDto> responseList = userService.getUsersByName(fullName);
+        if (responseList.isEmpty()) {
             throw new NotFoundException("No users found with name: " + fullName)
                     .addDetail("fullName", fullName);
         }
-        return ResponseEntity.ok(userDtoList);
+        return ResponseEntity.ok(responseList);
     }
 
     @GetMapping("/by-role")
-    public ResponseEntity<List<UserDto>> getUserByRole(@RequestParam @NotBlank String roleName) {
-        List<UserDto> users = userService.getUsersByRole(roleName);
-        if (users.isEmpty()) {
+    public ResponseEntity<List<UserResponseDto>> getUserByRole(@RequestParam @NotBlank String roleName) {
+        List<UserResponseDto> responseList = userService.getUsersByRole(roleName);
+        if (responseList.isEmpty()) {
             throw new NotFoundException("No users found with role: " + roleName)
                     .addDetail("roleName", roleName);
         }
-        return ResponseEntity.ok(users);
+        return ResponseEntity.ok(responseList);
     }
 
     @GetMapping("/by-iban/{iban}")
-    public ResponseEntity<UserDto> getUserByIban(@PathVariable @IbanFormat String iban) {
-        UserDto userDto = userService.getUserByIban(iban);
-        if (userDto == null) {
+    public ResponseEntity<UserResponseDto> getUserByIban(@PathVariable @IbanFormat String iban) {
+        UserResponseDto response = userService.getUserByIban(iban);
+        if (response == null) {
             throw new NotFoundException("No users found with IBAN: " + iban);
         }
-        return ResponseEntity.ok(userDto);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping
-    public ResponseEntity<UserDto> createUser(@Validated(OnCreate.class) @RequestBody UserDto userDto) {
-        UserDto createdUserDto = userService.createUser(userDto);
+    public ResponseEntity<UserResponseDto> createUser(@Valid @RequestBody CreateUserDto userDto) {
+        UserResponseDto createdUserDto = userService.createUser(userDto);
         return ResponseEntity.status(201).body(createdUserDto);
     }
 
     @PutMapping("/{userId}")
-    public ResponseEntity<UserDto> fullUpdateUser(@PathVariable Long userId,
-                                                  @Validated(OnUpdate.class) @RequestBody UserDto userDto) {
+    public ResponseEntity<UserResponseDto> fullUpdateUser(
+            @PathVariable Long userId,
+            @Validated(OnUpdate.class) @RequestBody UpdateUserDto userDto
+    ) {
         if (userDto.getPassword() == null || userDto.getEmail() == null) {
             throw new IllegalArgumentException("Missing required fields");
         }
 
-        UserDto updatedUser = userService.fullUpdateUser(userId, userDto);
-        return ResponseEntity.ok(updatedUser);
+        UserResponseDto updatedUserDto = userService.fullUpdateUser(userId, userDto);
+        return ResponseEntity.ok(updatedUserDto);
     }
 
     @PatchMapping("/{userId}")
-    public ResponseEntity<UserDto> partialUpdateUser(@PathVariable Long userId,
-                                                     @Validated(OnPatch.class) @RequestBody UserDto userDto) {
-        UserDto updatedUser = userService.partialUpdateUser(userId, userDto);
-        return ResponseEntity.ok(updatedUser);
+    public ResponseEntity<UserResponseDto> partialUpdateUser(
+            @PathVariable Long userId,
+            @Validated(OnPatch.class) @RequestBody UpdateUserDto userDto
+    ) {
+        UserResponseDto updatedUserDto = userService.partialUpdateUser(userId, userDto);
+        return ResponseEntity.ok(updatedUserDto);
     }
 
     @DeleteMapping("/{userId}")
