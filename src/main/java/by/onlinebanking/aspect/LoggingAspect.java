@@ -12,7 +12,9 @@ import org.springframework.stereotype.Component;
 public class LoggingAspect {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-    @Around("execution(* by.onlinebanking.controller..*(..)) || execution(* by.onlinebanking.service..*(..))")
+    @Around("(execution(* by.onlinebanking.controller..*(..)) || " +
+            "execution(* by.onlinebanking.service..*(..))) && " +
+            "!within(by.onlinebanking.service.LogsService)")
     public Object logMethodExecution(ProceedingJoinPoint joinPoint) throws Throwable {
         String methodName = joinPoint.getSignature().toShortString();
         logger.info("Method invocation: {} | Arguments: {}", methodName, joinPoint.getArgs());
