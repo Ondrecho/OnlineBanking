@@ -1,12 +1,10 @@
 package by.onlinebanking.controller;
 
 import by.onlinebanking.dto.AccountDto;
-import by.onlinebanking.dto.BaseTransactionDto;
 import by.onlinebanking.dto.TransactionResponseDto;
 import by.onlinebanking.model.enums.Currency;
 import by.onlinebanking.service.AccountService;
 import by.onlinebanking.validation.annotations.IbanFormat;
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,7 +16,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -54,14 +51,6 @@ public class AccountsController {
     @PatchMapping("/{iban}/open")
     public ResponseEntity<TransactionResponseDto> openAccount(@PathVariable @IbanFormat String iban) {
         TransactionResponseDto response = accountService.openAccount(iban);
-        return ResponseEntity.ok(response);
-    }
-
-    @PostMapping("/transaction")
-    public ResponseEntity<TransactionResponseDto> handleTransaction(
-            @Valid @RequestBody BaseTransactionDto request
-    ) {
-        TransactionResponseDto response = accountService.processTransaction(request);
         return ResponseEntity.ok(response);
     }
 
