@@ -11,7 +11,6 @@ import by.onlinebanking.service.UserService;
 import by.onlinebanking.validation.interfaces.OnPatch;
 import by.onlinebanking.validation.interfaces.OnUpdate;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,8 +43,27 @@ public class UsersController {
     }
 
     @GetMapping
-    public ResponseEntity<List<UserResponseDto>> getAllUsers() {
-        return ResponseEntity.ok(userService.getAllUsers());
+    public ResponseEntity<List<UserResponseDto>> getUsers(
+            @RequestParam(required = false) String fullName,
+            @RequestParam(required = false) String roleName
+    ) {
+        List<UserResponseDto> users;
+
+        if (fullName != null && roleName != null) {
+            users = userService.getUsersByNameAndRole(fullName, roleName);
+        } else if (fullName != null) {
+            users = userService.getUsersByName(fullName);
+        } else if (roleName != null) {
+            users = userService.getUsersByRole(roleName);
+        } else {
+            users = userService.getAllUsers();
+        }
+
+        if (users.isEmpty()) {
+            throw new NotFoundException("No users found with the specified criteria");
+        }
+
+        return ResponseEntity.ok(users);
     }
 
     @GetMapping("/{userId}")
@@ -56,26 +74,6 @@ public class UsersController {
                     .addDetail("userId", userId);
         }
         return ResponseEntity.ok(response);
-    }
-
-    @GetMapping("/by-name")
-    public ResponseEntity<List<UserResponseDto>> getUserByName(@RequestParam @NotBlank String fullName) {
-        List<UserResponseDto> responseList = userService.getUsersByName(fullName);
-        if (responseList.isEmpty()) {
-            throw new NotFoundException("No users found with name: " + fullName)
-                    .addDetail("fullName", fullName);
-        }
-        return ResponseEntity.ok(responseList);
-    }
-
-    @GetMapping("/by-role")
-    public ResponseEntity<List<UserResponseDto>> getUserByRole(@RequestParam @NotBlank String roleName) {
-        List<UserResponseDto> responseList = userService.getUsersByRole(roleName);
-        if (responseList.isEmpty()) {
-            throw new NotFoundException("No users found with role: " + roleName)
-                    .addDetail("roleName", roleName);
-        }
-        return ResponseEntity.ok(responseList);
     }
 
     @GetMapping("/{userId}/accounts")

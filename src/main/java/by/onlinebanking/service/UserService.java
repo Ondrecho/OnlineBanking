@@ -65,6 +65,13 @@ public class UserService {
                 .toList();
     }
 
+    public List<UserResponseDto> getUsersByNameAndRole(String fullName, String roleName) {
+        return userRepository.findAllByFullNameLikeAndRoleName("%" + fullName + "%", roleName)
+                .stream()
+                .map(UserResponseDto::new)
+                .toList();
+    }
+
     public UserResponseDto getUserByIban(String iban) {
         return new UserResponseDto(userRepository.findByIban(iban)
                             .orElseThrow(() -> new NotFoundException("Account not found")

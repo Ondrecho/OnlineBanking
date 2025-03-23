@@ -30,6 +30,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("SELECT u FROM User u JOIN u.roles r WHERE r.name = :roleName")
     List<User> findAllByRoleName(@Param("roleName") String roleName);
 
+    @Query("SELECT u FROM User u JOIN u.roles r WHERE u.fullName LIKE :fullName AND r.name = :roleName")
+    List<User> findAllByFullNameLikeAndRoleName(@Param("fullName") String fullName,
+                                                @Param("roleName") String roleName);
+
     @Query("SELECT u FROM User u JOIN u.accounts a WHERE a.iban = :iban")
     Optional<User> findByIban(@Param("iban") String iban);
 }
