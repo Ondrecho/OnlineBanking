@@ -88,7 +88,7 @@ The project is designed with scalability, security, and maintainability in mind.
 
 5. **Access the API**:
     - The API will be available at `http://localhost:8080/api`.
-    - Swagger UI can be accessed at `http://localhost:8080/swagger-ui.html`.
+    - Swagger UI can be accessed at `http://localhost:8080/swagger-ui/index.html`.
 
 ---
 
