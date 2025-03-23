@@ -47,17 +47,7 @@ public class UsersController {
             @RequestParam(required = false) String fullName,
             @RequestParam(required = false) String roleName
     ) {
-        List<UserResponseDto> users;
-
-        if (fullName != null && roleName != null) {
-            users = userService.getUsersByNameAndRole(fullName, roleName);
-        } else if (fullName != null) {
-            users = userService.getUsersByName(fullName);
-        } else if (roleName != null) {
-            users = userService.getUsersByRole(roleName);
-        } else {
-            users = userService.getAllUsers();
-        }
+        List<UserResponseDto> users = userService.getUsers(fullName, roleName);
 
         if (users.isEmpty()) {
             throw new NotFoundException("No users found with the specified criteria");

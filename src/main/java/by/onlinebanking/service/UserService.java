@@ -9,6 +9,7 @@ import by.onlinebanking.exception.NotFoundException;
 import by.onlinebanking.model.Role;
 import by.onlinebanking.model.User;
 import by.onlinebanking.repository.UserRepository;
+import by.onlinebanking.specifications.UserSpecifications;
 import by.onlinebanking.validation.RolesValidator;
 import by.onlinebanking.validation.interfaces.OnPatch;
 import jakarta.transaction.Transactional;
@@ -17,6 +18,7 @@ import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
@@ -41,32 +43,18 @@ public class UserService {
                         .addDetail(USER_ID, id)));
     }
 
-    @Cacheable(value = "allUsers")
-    public List<UserResponseDto> getAllUsers() {
-        return userRepository.findAll()
-                .stream()
-                .map(UserResponseDto::new)
-                .toList();
-    }
+    @Cacheable(value = "users")
+    public List<UserResponseDto> getUsers(String fullName, String roleName) {
+        Specification<User> spec = Specification.where(null);
 
-    @Cacheable(value = "usersByName", key = "#fullName")
-    public List<UserResponseDto> getUsersByName(String fullName) {
-        return userRepository.findAllByFullNameLike("%" + fullName + "%")
-                .stream()
-                .map(UserResponseDto::new)
-                .toList();
-    }
+        if (fullName != null) {
+            spec = spec.and(UserSpecifications.hasFullName(fullName));
+        }
+        if (roleName != null) {
+            spec = spec.and(UserSpecifications.hasRole(roleName));
+        }
 
-    @Cacheable(value = "usersByRole", key = "#roleName")
-    public List<UserResponseDto> getUsersByRole(String roleName) {
-        return userRepository.findAllByRoleName(roleName)
-                .stream()
-                .map(UserResponseDto::new)
-                .toList();
-    }
-
-    public List<UserResponseDto> getUsersByNameAndRole(String fullName, String roleName) {
-        return userRepository.findAllByFullNameLikeAndRoleName("%" + fullName + "%", roleName)
+        return userRepository.findAll(spec)
                 .stream()
                 .map(UserResponseDto::new)
                 .toList();
@@ -79,7 +67,7 @@ public class UserService {
     }
 
     @Transactional
-    @CacheEvict(value = {"allUsers", "usersByName", "usersByRole"}, allEntries = true)
+    @CacheEvict(value = "users", allEntries = true)
     public UserResponseDto createUser(CreateUserDto userDto) {
         checkEmail(userDto.getEmail());
 
@@ -98,7 +86,7 @@ public class UserService {
     }
 
     @Transactional
-    @CacheEvict(value = {"allUsers", "usersByName", "usersByRole"}, allEntries = true)
+    @CacheEvict(value = "users", allEntries = true)
     public UserResponseDto fullUpdateUser(Long id, UpdateUserDto userDto) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND)
@@ -122,7 +110,7 @@ public class UserService {
     }
 
     @Transactional
-    @CacheEvict(value = {"allUsers", "usersByName", "usersByRole"}, allEntries = true)
+    @CacheEvict(value = "users", allEntries = true)
     public UserResponseDto partialUpdateUser(Long id, @Validated(OnPatch.class) UpdateUserDto userDto) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND)
@@ -147,7 +135,7 @@ public class UserService {
     }
 
     @Transactional
-    @CacheEvict(value = {"allUsers", "usersByName", "usersByRole"}, allEntries = true)
+    @CacheEvict(value = "users", allEntries = true)
     public void deleteUser(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND)

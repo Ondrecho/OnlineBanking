@@ -13,7 +13,7 @@ import by.onlinebanking.model.enums.AccountStatus;
 import by.onlinebanking.model.enums.Currency;
 import by.onlinebanking.repository.AccountRepository;
 import by.onlinebanking.repository.UserRepository;
-import by.onlinebanking.utils.IbanGenerator;
+import by.onlinebanking.service.utils.IbanGenerator;
 import by.onlinebanking.validation.TransactionValidator;
 import jakarta.transaction.Transactional;
 import java.math.BigDecimal;
@@ -55,7 +55,7 @@ public class AccountService {
     }
 
     @Transactional
-    @CacheEvict(value = {"allUsers", "usersByName", "usersByRole"}, allEntries = true)
+    @CacheEvict(value = "users", allEntries = true)
     public AccountDto createAccount(Long userId, Currency currency) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("User not found")
@@ -72,7 +72,7 @@ public class AccountService {
     }
 
     @Transactional
-    @CacheEvict(value = {"allUsers", "usersByName", "usersByRole"}, allEntries = true)
+    @CacheEvict(value = "users", allEntries = true)
     public TransactionResponseDto closeAccount(String iban) {
         Account account = accountRepository.findByIban(iban)
                 .orElseThrow(() -> new NotFoundException(ACCOUNT_NOT_FOUND)
@@ -99,7 +99,7 @@ public class AccountService {
     }
 
     @Transactional
-    @CacheEvict(value = {"allUsers", "usersByName", "usersByRole"}, allEntries = true)
+    @CacheEvict(value = "users", allEntries = true)
     public TransactionResponseDto openAccount(String iban) {
         Account account = accountRepository.findByIban(iban)
                 .orElseThrow(() -> new NotFoundException(ACCOUNT_NOT_FOUND)
@@ -121,7 +121,7 @@ public class AccountService {
     }
 
     @Transactional
-    @CacheEvict(value = {"allUsers", "usersByName", "usersByRole"}, allEntries = true)
+    @CacheEvict(value = "users", allEntries = true)
     public TransactionResponseDto deleteAccount(String iban) {
         Account account = accountRepository.findByIban(iban)
                 .orElseThrow(() -> new NotFoundException(ACCOUNT_NOT_FOUND)
@@ -142,7 +142,7 @@ public class AccountService {
     }
 
     @Transactional
-    @CacheEvict(value = {"allUsers", "usersByName", "usersByRole"}, allEntries = true)
+    @CacheEvict(value = "users", allEntries = true)
     public TransactionResponseDto processTransaction(BaseTransactionDto transaction) {
         transactionValidator.validateTransaction(transaction);
 

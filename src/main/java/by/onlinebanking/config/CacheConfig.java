@@ -1,7 +1,6 @@
 package by.onlinebanking.config;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
@@ -14,17 +13,10 @@ import org.springframework.context.annotation.Configuration;
 public class CacheConfig {
     @Bean
     public CacheManager cacheManager() {
-        CaffeineCacheManager cacheManager = new CaffeineCacheManager();
-        cacheManager.setCacheNames(List.of(
-                "allUsers",
-                "usersByName",
-                "usersByRole"
-        ));
+        CaffeineCacheManager cacheManager = new CaffeineCacheManager("users");
         cacheManager.setCaffeine(Caffeine.newBuilder()
-                .maximumSize(500)
                 .expireAfterWrite(30, TimeUnit.MINUTES)
-                .recordStats()
-        );
+                .maximumSize(100));
         return cacheManager;
     }
 }
