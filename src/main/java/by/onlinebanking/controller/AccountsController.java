@@ -1,23 +1,19 @@
 package by.onlinebanking.controller;
 
-import by.onlinebanking.dto.AccountDto;
 import by.onlinebanking.dto.TransactionResponseDto;
-import by.onlinebanking.model.enums.Currency;
+import by.onlinebanking.dto.UserResponseDto;
+import by.onlinebanking.exception.NotFoundException;
 import by.onlinebanking.service.AccountService;
+import by.onlinebanking.service.UserService;
 import by.onlinebanking.validation.annotations.IbanFormat;
-import jakarta.validation.constraints.NotNull;
-import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -25,21 +21,22 @@ import org.springframework.web.bind.annotation.RestController;
 @Validated
 public class AccountsController {
     private final AccountService accountService;
+    private final UserService userService;
 
     @Autowired
-    public AccountsController(AccountService accountService) {
+    public AccountsController(AccountService accountService,
+                              UserService userService) {
         this.accountService = accountService;
+        this.userService = userService;
     }
 
-    @GetMapping("/user/{userId}")
-    public ResponseEntity<List<AccountDto>> getUserAccounts(@PathVariable Long userId) {
-        return ResponseEntity.ok(accountService.getAccountsByUserId(userId));
-    }
-
-    @PostMapping("/user/{userId}")
-    public ResponseEntity<AccountDto> createAccount(@PathVariable Long userId,
-                                                    @NotNull @RequestParam Currency currency) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(accountService.createAccount(userId, currency));
+    @GetMapping("/{iban}/user")
+    public ResponseEntity<UserResponseDto> getUserByIban(@PathVariable @IbanFormat String iban) {
+        UserResponseDto response = userService.getUserByIban(iban);
+        if (response == null) {
+            throw new NotFoundException("No users found with IBAN: " + iban);
+        }
+        return ResponseEntity.ok(response);
     }
 
     @PatchMapping("/{iban}/close")
