@@ -34,7 +34,7 @@ public class AccountsController {
     public ResponseEntity<UserResponseDto> getUserByIban(@PathVariable @IbanFormat String iban) {
         UserResponseDto response = userService.getUserByIban(iban);
         if (response == null) {
-            throw new NotFoundException("No users found with IBAN: " + iban);
+            throw new NotFoundException("No users found with IBAN").addDetail("iban", iban);
         }
         return ResponseEntity.ok(response);
     }

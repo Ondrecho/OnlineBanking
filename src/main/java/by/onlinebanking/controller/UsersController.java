@@ -50,7 +50,9 @@ public class UsersController {
         List<UserResponseDto> users = userService.getUsers(fullName, roleName);
 
         if (users.isEmpty()) {
-            throw new NotFoundException("No users found with the specified criteria");
+            throw new NotFoundException("No users found with the specified criteria")
+                    .addDetail("fullName", fullName)
+                    .addDetail("roleName", roleName);
         }
 
         return ResponseEntity.ok(users);

@@ -43,7 +43,7 @@ public class RoleService {
                 .toList();
     }
 
-    @CacheEvict(value = {"allUsers", "usersByName", "usersByRole"}, allEntries = true)
+    @CacheEvict(value = "users", allEntries = true)
     public RoleDto updateRole(Long roleId, RoleDto roleDto) {
         Role role = roleRepository.findById(roleId)
                 .orElseThrow(() -> new NotFoundException("Role not found")

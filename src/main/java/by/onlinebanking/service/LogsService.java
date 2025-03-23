@@ -37,7 +37,7 @@ public class LogsService {
                             result.add(line);
                         }
                     } catch (DateTimeParseException ignore) {
-                        // ignore
+                        // ignoring lines that do not match the date format
                     }
                 }
             }
@@ -49,13 +49,13 @@ public class LogsService {
         try {
             return LocalDate.parse(date);
         } catch (DateTimeParseException ex) {
-            throw new ValidationException("Invalid date format");
+            throw new ValidationException("Invalid date format").addDetail("date", date);
         }
     }
 
     public void validateDateNotInFuture(LocalDate date) {
         if (date.isAfter(LocalDate.now())) {
-            throw new ValidationException("Date cannot be in the future");
+            throw new ValidationException("Date cannot be in the future").addDetail("date", date);
         }
     }
 

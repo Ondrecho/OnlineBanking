@@ -3,11 +3,11 @@ package by.onlinebanking.validation;
 import by.onlinebanking.dto.BaseTransactionDto;
 import by.onlinebanking.dto.SingleAccountTransactionDto;
 import by.onlinebanking.dto.TransferTransactionDto;
+import by.onlinebanking.exception.ValidationException;
 import by.onlinebanking.model.Account;
 import by.onlinebanking.model.enums.AccountStatus;
 import by.onlinebanking.model.enums.TransactionType;
 import by.onlinebanking.repository.AccountRepository;
-import jakarta.validation.ValidationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -42,54 +42,68 @@ public class TransactionValidator {
                 validateAccountStatus(singleRequest.getIban(), "Account");
             }
 
-            default -> throw new ValidationException("Invalid transaction type");
+            default -> throw new ValidationException("Invalid transaction type")
+                    .addDetail("transactionType", transactionRequest.getTransactionType());
         }
     }
 
     private void validateAccountStatus(String iban, String accountType) {
         Account account = accountRepository.findByIban(iban)
-                .orElseThrow(() -> new ValidationException(accountType + " not found: " + iban));
+                .orElseThrow(() -> new ValidationException(accountType + " not found: ")
+                        .addDetail("iban", iban));
 
         if (account.getStatus() == AccountStatus.CLOSED) {
-            throw new ValidationException(accountType + " is closed: " + iban);
+            throw new ValidationException(accountType + " is closed: ")
+                    .addDetail("iban", iban);
         }
     }
 
     private void validateTransfer(TransferTransactionDto transactionRequest) {
         if (transactionRequest.getFromIban().equals(transactionRequest.getToIban())) {
-            throw new ValidationException("Sender and receiver account cannot be the same");
+            throw new ValidationException("Sender and receiver account cannot be the same")
+                    .addDetail("fromIban", transactionRequest.getFromIban())
+                    .addDetail("toIban", transactionRequest.getToIban());
         }
 
         Account fromAccount = accountRepository.findByIban(transactionRequest.getFromIban())
-                .orElseThrow(() -> new ValidationException("Sender account not found"));
+                .orElseThrow(() -> new ValidationException("Sender account not found")
+                .addDetail("fromIban", transactionRequest.getFromIban()));
 
         Account toAccount = accountRepository.findByIban(transactionRequest.getToIban())
-                .orElseThrow(() -> new ValidationException("Receiver account not found"));
+                .orElseThrow(() -> new ValidationException("Receiver account not found")
+                .addDetail("toIban", transactionRequest.getToIban()));
 
         if (!fromAccount.getCurrency().equals(toAccount.getCurrency())) {
-            throw new ValidationException("Sender account currency does not match receiver account currency");
+            throw new ValidationException("Sender account currency does not match receiver account currency")
+                    .addDetail("senderCurrency", transactionRequest.getCurrency())
+                    .addDetail("receiverCurrency", transactionRequest.getCurrency());
         }
 
         if (!fromAccount.getCurrency().equals(transactionRequest.getCurrency())) {
-            throw new ValidationException("Sender account currency does not match transaction currency");
+            throw new ValidationException("Sender account currency does not match transaction currency")
+                    .addDetail("transactionCurrency", transactionRequest.getCurrency());
         }
 
         if (fromAccount.getBalance().compareTo(transactionRequest.getAmount()) < 0) {
-            throw new ValidationException("Insufficient funds in sender's account");
+            throw new ValidationException("Insufficient funds in sender's account")
+                    .addDetail("amount", transactionRequest.getAmount());
         }
     }
 
     private void validateAccountOperation(SingleAccountTransactionDto transactionRequest) {
         Account account = accountRepository.findByIban(transactionRequest.getIban())
-                .orElseThrow(() -> new ValidationException("Account not found"));
+                .orElseThrow(() -> new ValidationException("Account not found")
+                .addDetail("iban", transactionRequest.getIban()));
 
         if (!account.getCurrency().equals(transactionRequest.getCurrency())) {
-            throw new ValidationException("Account currency does not match transaction currency");
+            throw new ValidationException("Account currency does not match transaction currency")
+                    .addDetail("currency", transactionRequest.getCurrency());
         }
 
         if (transactionRequest.getTransactionType() == TransactionType.WITHDRAWAL &&
                 account.getBalance().compareTo(transactionRequest.getAmount()) < 0) {
-            throw new ValidationException("Insufficient funds");
+            throw new ValidationException("Insufficient funds")
+                    .addDetail("amount", transactionRequest.getAmount());
         }
     }
 }
