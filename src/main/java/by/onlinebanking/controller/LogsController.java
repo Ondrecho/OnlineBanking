@@ -34,9 +34,8 @@ public class LogsController {
         LocalDate targetDate = logsService.parseDate(date);
         logsService.validateDateNotInFuture(targetDate);
 
-        List<String> logs = logsService.collectLogs(targetDate);
+        List<String> logs = logsService.getLogsForDate(targetDate);
         String content = String.join("\n", logs);
-
         ByteArrayResource resource = new ByteArrayResource(content.getBytes(StandardCharsets.UTF_8)) {
             @Override
             public String getFilename() {
