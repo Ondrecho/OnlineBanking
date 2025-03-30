@@ -1,6 +1,7 @@
 package by.onlinebanking.repository;
 
 import by.onlinebanking.model.User;
+import java.util.List;
 import java.util.Optional;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -26,4 +27,7 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
 
     @Query("SELECT u FROM User u JOIN u.accounts a WHERE a.iban = :iban")
     Optional<User> findByIban(@Param("iban") String iban);
+
+    @Query("SELECT u.email FROM User u WHERE u.email IN :emails")
+    List<String> findExistingEmails(@Param("emails") List<String> emails);
 }

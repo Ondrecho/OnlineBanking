@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -83,6 +84,14 @@ public class UsersController {
     public ResponseEntity<UserResponseDto> createUser(@Valid @RequestBody CreateUserDto userDto) {
         UserResponseDto createdUserDto = userService.createUser(userDto);
         return ResponseEntity.status(201).body(createdUserDto);
+    }
+
+    @PostMapping("/bulk")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ResponseEntity<List<UserResponseDto>> createUsersBulk(
+            @Validated @RequestBody List<@Valid CreateUserDto> userDtos) {
+        List<UserResponseDto> createdUsers = userService.createUsersBulk(userDtos);
+        return ResponseEntity.status(HttpStatus.CREATED).body(createdUsers);
     }
 
     @PutMapping("/{userId}")

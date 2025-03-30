@@ -1,5 +1,6 @@
 package by.onlinebanking.aspect;
 
+import java.util.List;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.AfterReturning;
 import org.aspectj.lang.annotation.Aspect;
@@ -21,5 +22,14 @@ public class UserActionLoggingAspect {
         Object[] args = joinPoint.getArgs();
 
         logger.info("User action: {} | Arguments: {} | Result: {}", methodName, args, result);
+    }
+
+    @AfterReturning(
+            pointcut = "execution(* by.onlinebanking.controller.UsersController.createUsersBulk(..))",
+            returning = "result"
+    )
+    public void logBulkCreate(JoinPoint joinPoint, Object result) {
+        Object[] args = joinPoint.getArgs();
+        logger.info("Bulk user creation | Count: {} | Result: {}", ((List<?>) args[0]).size(), result);
     }
 }

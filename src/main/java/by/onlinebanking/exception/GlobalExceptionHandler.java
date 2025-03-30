@@ -2,8 +2,10 @@ package by.onlinebanking.exception;
 
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
+import jakarta.validation.ConstraintViolationException;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +18,9 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    private static final String VALIDATIONERROR = "VALIDATION_ERROR";
+    private static final String FIELD = "field";
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ResponseEntity<ErrorResponse> handleValidationExceptions(MethodArgumentNotValidException ex) {
@@ -27,11 +32,42 @@ public class GlobalExceptionHandler {
         });
 
         ErrorResponse response = new ErrorResponse(
-                "VALIDATION_ERROR",
+                VALIDATIONERROR,
                 "Validation failed",
                 errors
         );
         return ResponseEntity.badRequest().body(response);
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ResponseEntity<ErrorResponse> handleConstraintViolation(ConstraintViolationException ex) {
+        List<Map<String, Object>> errors = ex.getConstraintViolations().stream()
+                .map(violation -> {
+                    Map<String, Object> error = new HashMap<>();
+                    String path = violation.getPropertyPath().toString();
+
+                    int lastBracketIndex = path.lastIndexOf('[');
+                    int dotIndex = path.indexOf('.', lastBracketIndex);
+
+                    if (lastBracketIndex > 0 && dotIndex > lastBracketIndex) {
+                        String indexStr = path.substring(lastBracketIndex + 1,
+                                path.indexOf(']',
+                                lastBracketIndex));
+                        error.put("index", Integer.parseInt(indexStr));
+                        error.put(FIELD, path.substring(dotIndex + 1));
+                    } else {
+                        error.put(FIELD, path);
+                    }
+
+                    error.put("message", violation.getMessage());
+                    return error;
+                })
+                .toList();
+
+        return ResponseEntity.badRequest().body(
+                new ErrorResponse(VALIDATIONERROR, "Validation failed", Map.of("errors", errors))
+        );
     }
 
     @ExceptionHandler(ApiException.class)
@@ -91,7 +127,7 @@ public class GlobalExceptionHandler {
                 "INVALID_REQUEST",
                 "Invalid request: Incorrect date format",
                 Map.of(
-                        "field", fieldName,
+                        FIELD, fieldName,
                         "expectedFormat", expectedFormat,
                         "providedValue", providedValue
                 )
@@ -109,7 +145,7 @@ public class GlobalExceptionHandler {
         String message = "Invalid request: Unknown field '" + unknownField + "'";
 
         ErrorResponse response = new ErrorResponse(
-                "VALIDATION_ERROR",
+                VALIDATIONERROR,
                 message,
                 Map.of("unknownFields", Collections.singletonList(unknownField))
         );

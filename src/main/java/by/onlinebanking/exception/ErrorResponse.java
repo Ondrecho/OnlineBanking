@@ -1,5 +1,6 @@
 package by.onlinebanking.exception;
 
+import java.util.HashMap;
 import java.util.Map;
 import lombok.Getter;
 
@@ -12,6 +13,6 @@ public class ErrorResponse {
     public ErrorResponse(String errorCode, String message, Map<String, Object> details) {
         this.errorCode = errorCode;
         this.message = message;
-        this.details = details;
+        this.details = details != null ? details : new HashMap<>();
     }
 }
