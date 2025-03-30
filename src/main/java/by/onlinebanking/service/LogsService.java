@@ -8,6 +8,7 @@ import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -20,11 +21,15 @@ public class LogsService {
     @Value("${logging.file.path:logs/application.current.log}")
     private String logFilePath;
 
-    public List<String> getLogsForDate(LocalDate date) throws IOException {
-        return getLogFilesForDate(date).stream()
-                .flatMap(this::readLinesSafely)
-                .filter(line -> isLineDateMatch(line, date))
-                .toList();
+    public List<String> getLogsForDate(LocalDate date) {
+        try {
+            return getLogFilesForDate(date).stream()
+                    .flatMap(this::readLinesSafely)
+                    .filter(line -> isLineDateMatch(line, date))
+                    .toList();
+        } catch (IOException e) {
+            return Collections.emptyList(); // Обрабатываем IOException
+        }
     }
 
     private Stream<String> readLinesSafely(Path file) {

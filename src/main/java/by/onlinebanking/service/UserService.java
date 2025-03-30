@@ -57,8 +57,15 @@ public class UserService {
             spec = spec.and(UserSpecifications.hasRole(roleName));
         }
 
-        return userRepository.findAll(spec)
-                .stream()
+        List<User> users = userRepository.findAll(spec);
+
+        if (users.isEmpty()) {
+            throw new NotFoundException("No users found with the specified criteria")
+                    .addDetail("fullName", fullName)
+                    .addDetail("roleName", roleName);
+        }
+
+        return users.stream()
                 .map(UserResponseDto::new)
                 .toList();
     }

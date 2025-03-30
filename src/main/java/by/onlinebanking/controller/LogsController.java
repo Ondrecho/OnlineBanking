@@ -2,7 +2,6 @@ package by.onlinebanking.controller;
 
 import by.onlinebanking.service.LogsService;
 import jakarta.validation.constraints.Pattern;
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.List;
@@ -30,7 +29,7 @@ public class LogsController {
     public ResponseEntity<ByteArrayResource> getLogsByDate(
             @RequestParam @Pattern(regexp = "\\d{4}-\\d{2}-\\d{2}",
                     message = "Invalid date format (yyyy-MM-dd)") String date
-    ) throws IOException {
+    ) {
         LocalDate targetDate = logsService.parseDate(date);
         logsService.validateDateNotInFuture(targetDate);
 
