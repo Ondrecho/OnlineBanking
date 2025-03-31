@@ -8,7 +8,7 @@ class OnlineBankingApplicationTests {
 
 	@Test
 	void contextLoads() {
-		//Tests
+		// This test will verify that the Spring context loads successfull
 	}
 
 }

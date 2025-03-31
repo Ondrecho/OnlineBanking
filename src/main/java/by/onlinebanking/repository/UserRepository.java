@@ -4,6 +4,7 @@ import by.onlinebanking.model.User;
 import java.util.List;
 import java.util.Optional;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
@@ -13,6 +14,10 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificationExecutor<User> {
+    @NotNull
+    @EntityGraph(attributePaths = {"roles", "accounts"})
+    List<User> findAll(Specification<User> spec);
+
     @NotNull
     @EntityGraph(attributePaths = {"roles", "accounts"})
     Optional<User> findById(@NotNull Long id);

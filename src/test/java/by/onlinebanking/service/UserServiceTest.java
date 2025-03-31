@@ -11,7 +11,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.cache.CacheManager;
 import org.springframework.data.jpa.domain.Specification;
 import java.time.LocalDate;
 import java.util.*;
@@ -26,9 +25,6 @@ class UserServiceTest {
 
     @Mock
     private RolesValidator rolesValidator;
-
-    @Mock
-    private CacheManager cacheManager;
 
     @InjectMocks
     private UserService usersService;
@@ -95,7 +91,6 @@ class UserServiceTest {
         assertEquals("User not found", exception.getMessage());
         verify(userRepository).findById(1L);
     }
-
 
     @Test
     void getUsers_WithFullNameFilter_ReturnsFilteredUsers() {
