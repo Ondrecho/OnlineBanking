@@ -1,7 +1,7 @@
 package by.onlinebanking.controller;
 
-import by.onlinebanking.dto.TransactionResponseDto;
-import by.onlinebanking.dto.UserResponseDto;
+import by.onlinebanking.dto.response.TransactionResponseDto;
+import by.onlinebanking.dto.response.UserResponseDto;
 import by.onlinebanking.exception.NotFoundException;
 import by.onlinebanking.service.AccountService;
 import by.onlinebanking.service.UserService;

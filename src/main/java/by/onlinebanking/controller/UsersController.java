@@ -1,9 +1,9 @@
 package by.onlinebanking.controller;
 
-import by.onlinebanking.dto.AccountDto;
-import by.onlinebanking.dto.CreateUserDto;
-import by.onlinebanking.dto.UpdateUserDto;
-import by.onlinebanking.dto.UserResponseDto;
+import by.onlinebanking.dto.account.AccountDto;
+import by.onlinebanking.dto.response.UserResponseDto;
+import by.onlinebanking.dto.user.CreateUserDto;
+import by.onlinebanking.dto.user.UpdateUserDto;
 import by.onlinebanking.exception.NotFoundException;
 import by.onlinebanking.model.enums.Currency;
 import by.onlinebanking.service.AccountService;

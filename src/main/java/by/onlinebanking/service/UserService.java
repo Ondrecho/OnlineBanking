@@ -1,9 +1,9 @@
 package by.onlinebanking.service;
 
-import by.onlinebanking.dto.CreateUserDto;
-import by.onlinebanking.dto.UpdateUserDto;
-import by.onlinebanking.dto.UserBaseDto;
-import by.onlinebanking.dto.UserResponseDto;
+import by.onlinebanking.dto.response.UserResponseDto;
+import by.onlinebanking.dto.user.CreateUserDto;
+import by.onlinebanking.dto.user.UpdateUserDto;
+import by.onlinebanking.dto.user.UserBaseDto;
 import by.onlinebanking.exception.BusinessException;
 import by.onlinebanking.exception.NotFoundException;
 import by.onlinebanking.exception.ValidationException;

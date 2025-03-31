@@ -1,7 +1,7 @@
 package by.onlinebanking.controller;
 
-import by.onlinebanking.dto.BaseTransactionDto;
-import by.onlinebanking.dto.TransactionResponseDto;
+import by.onlinebanking.dto.response.TransactionResponseDto;
+import by.onlinebanking.dto.transaction.BaseTransactionDto;
 import by.onlinebanking.service.AccountService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;

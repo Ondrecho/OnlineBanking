@@ -1,4 +1,4 @@
-package by.onlinebanking.dto;
+package by.onlinebanking.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.constraints.Email;
@@ -11,7 +11,7 @@ import lombok.ToString;
 
 @Getter
 @Setter
-public class LoginRequestDto {
+public class LoginRequest {
     @NotBlank(message = "Email is required")
     @Email(regexp = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$", message = "Email should be valid")
     private String email;

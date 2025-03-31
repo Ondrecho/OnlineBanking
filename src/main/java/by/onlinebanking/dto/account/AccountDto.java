@@ -1,4 +1,4 @@
-package by.onlinebanking.dto;
+package by.onlinebanking.dto.account;
 
 import by.onlinebanking.model.Account;
 import by.onlinebanking.model.enums.AccountStatus;

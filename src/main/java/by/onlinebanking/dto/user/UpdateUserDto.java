@@ -1,5 +1,6 @@
-package by.onlinebanking.dto;
+package by.onlinebanking.dto.user;
 
+import by.onlinebanking.dto.role.RoleDto;
 import by.onlinebanking.model.User;
 import by.onlinebanking.validation.interfaces.OnPatch;
 import by.onlinebanking.validation.interfaces.OnUpdate;

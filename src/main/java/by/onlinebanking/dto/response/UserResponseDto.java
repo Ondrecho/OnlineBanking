@@ -1,5 +1,7 @@
-package by.onlinebanking.dto;
+package by.onlinebanking.dto.response;
 
+import by.onlinebanking.dto.account.AccountDto;
+import by.onlinebanking.dto.role.RoleDto;
 import by.onlinebanking.model.User;
 import java.time.LocalDate;
 import java.util.Set;

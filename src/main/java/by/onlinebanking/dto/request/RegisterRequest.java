@@ -1,4 +1,4 @@
-package by.onlinebanking.dto;
+package by.onlinebanking.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.constraints.Email;
@@ -14,7 +14,7 @@ import lombok.ToString;
 
 @Getter
 @Setter
-public class RegisterUserDto {
+public class RegisterRequest {
     @NotBlank(message = "Full name is required")
     @Size(min = 2, max = 100, message = "Full name must be between 2 and 100 characters")
     @Pattern(regexp = "^[a-zA-Z\\s]+$",

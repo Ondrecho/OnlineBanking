@@ -1,6 +1,9 @@
 package by.onlinebanking.service;
 
-import by.onlinebanking.dto.*;
+import by.onlinebanking.dto.response.UserResponseDto;
+import by.onlinebanking.dto.role.RoleDto;
+import by.onlinebanking.dto.user.CreateUserDto;
+import by.onlinebanking.dto.user.UpdateUserDto;
 import by.onlinebanking.exception.*;
 import by.onlinebanking.model.*;
 import by.onlinebanking.repository.UserRepository;

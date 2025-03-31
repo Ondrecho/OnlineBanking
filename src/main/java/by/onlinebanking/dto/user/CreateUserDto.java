@@ -1,5 +1,6 @@
-package by.onlinebanking.dto;
+package by.onlinebanking.dto.user;
 
+import by.onlinebanking.dto.role.RoleDto;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
