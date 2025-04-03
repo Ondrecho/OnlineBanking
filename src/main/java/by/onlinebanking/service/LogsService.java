@@ -1,7 +1,10 @@
 package by.onlinebanking.service;
 
+import by.onlinebanking.exception.BusinessException;
+import by.onlinebanking.exception.NotFoundException;
 import by.onlinebanking.exception.ValidationException;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -10,16 +13,73 @@ import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
+import lombok.Getter;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.stereotype.Service;
 
 @Service
 public class LogsService {
     @Value("${logging.file.path:logs/application.current.log}")
     private String logFilePath;
+
+    private final Map<String, AsyncTask> tasks = new ConcurrentHashMap<>();
+    private final ExecutorService executor = Executors.newCachedThreadPool();
+
+    public String createLogFileAsync(String date) {
+        String taskId = UUID.randomUUID().toString();
+        tasks.put(taskId, new AsyncTask("PENDING", null));
+
+        executor.submit(() -> {
+            try {
+                LocalDate targetDate = parseDate(date);
+                validateDateNotInFuture(targetDate);
+                List<String> logs = getLogsForDate(targetDate);
+                String content = String.join("\n", logs);
+                ByteArrayResource resource = new ByteArrayResource(content.getBytes(StandardCharsets.UTF_8)) {
+                    @Override
+                    public String getFilename() {
+                        return "logs_" + date + ".log";
+                    }
+                };
+                tasks.put(taskId, new AsyncTask("COMPLETED", resource));
+            } catch (Exception e) {
+                tasks.put(taskId, new AsyncTask("FAILED", null));
+            }
+        });
+
+        return taskId;
+    }
+
+    public String getTaskStatus(String taskId) {
+        AsyncTask task = tasks.get(taskId);
+        if (task == null) {
+            throw new NotFoundException("Task not found")
+                    .addDetail("taskId", taskId);
+        }
+        return task.getStatus();
+    }
+
+    public ByteArrayResource getTaskLog(String taskId) {
+        AsyncTask task = tasks.get(taskId);
+        if (task == null) {
+            throw new NotFoundException("Task not found")
+                    .addDetail("taskId", taskId);
+        }
+        if (!"COMPLETED".equals(task.getStatus())) {
+            throw new BusinessException("Task is not completed")
+                    .addDetail("status", task.getStatus());
+        }
+        return task.getResource();
+    }
 
     public List<String> getLogsForDate(LocalDate date) {
         try {
@@ -94,5 +154,16 @@ public class LogsService {
     private int extractFileIndex(String filename) {
         Matcher m = Pattern.compile("\\.(\\d+)\\.log$").matcher(filename);
         return m.find() ? Integer.parseInt(m.group(1)) : 0;
+    }
+
+    @Getter
+    private static class AsyncTask {
+        private final String status;
+        private final ByteArrayResource resource;
+
+        public AsyncTask(String status, ByteArrayResource resource) {
+            this.status = status;
+            this.resource = resource;
+        }
     }
 }
