@@ -1,5 +1,6 @@
 package by.onlinebanking.service;
 
+import by.onlinebanking.dto.request.RegisterRequest;
 import by.onlinebanking.dto.response.UserResponseDto;
 import by.onlinebanking.dto.user.CreateUserDto;
 import by.onlinebanking.dto.user.UpdateUserDto;
@@ -9,6 +10,7 @@ import by.onlinebanking.exception.NotFoundException;
 import by.onlinebanking.exception.ValidationException;
 import by.onlinebanking.model.Role;
 import by.onlinebanking.model.User;
+import by.onlinebanking.repository.RoleRepository;
 import by.onlinebanking.repository.UserRepository;
 import by.onlinebanking.specifications.UserSpecifications;
 import by.onlinebanking.validation.RolesValidator;
@@ -22,6 +24,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
@@ -32,12 +35,37 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final RolesValidator rolesValidator;
+    private final RoleRepository roleRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Autowired
     public UserService(UserRepository userRepository,
-                       RolesValidator rolesValidator) {
+                       RolesValidator rolesValidator,
+                       RoleRepository roleRepository,
+                       PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.rolesValidator = rolesValidator;
+        this.roleRepository = roleRepository;
+        this.passwordEncoder = passwordEncoder;
+    }
+
+    @Transactional
+    public UserResponseDto registerUser(RegisterRequest request) {
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new BusinessException("User with email already exists");
+        }
+
+        User user = new User();
+        user.setEmail(request.getEmail());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setDateOfBirth(request.getDateOfBirth());
+
+        Role userRole = roleRepository.findByName("ROLE_USER")
+                .orElseThrow(() -> new NotFoundException("Role ROLE_USER not found"));
+
+        user.getRoles().add(userRole);
+
+        return new UserResponseDto(userRepository.save(user));
     }
 
     public UserResponseDto getUserById(Long id) {
