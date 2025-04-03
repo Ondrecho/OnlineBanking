@@ -3,6 +3,8 @@ package by.onlinebanking.service;
 import by.onlinebanking.exception.BusinessException;
 import by.onlinebanking.exception.NotFoundException;
 import by.onlinebanking.exception.ValidationException;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -12,12 +14,19 @@ import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -28,57 +37,129 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class LogsService {
+    private static final long TASK_TTL_MINUTES = 30;
+    private static final String LOGS = "logs_";
+    private static final String TASK_ID = "taskId";
+    private static final String STATUS = "status";
     @Value("${logging.file.path:logs/application.current.log}")
     private String logFilePath;
+    private final Map<String, TaskWrapper> tasks = new ConcurrentHashMap<>();
+    private final ScheduledExecutorService cleanupExecutor = Executors.newSingleThreadScheduledExecutor();
 
-    private final Map<String, AsyncTask> tasks = new ConcurrentHashMap<>();
-    private final ExecutorService executor = Executors.newCachedThreadPool();
+    @PostConstruct
+    public void init() {
+        cleanupExecutor.scheduleAtFixedRate(this::cleanupOldTasks, 30, 30, TimeUnit.MINUTES);
+    }
+
+    @PreDestroy
+    public void cleanup() {
+        cleanupExecutor.shutdown();
+        try {
+            if (!cleanupExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
+                cleanupExecutor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            cleanupExecutor.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
+    }
 
     public String createLogFileAsync(String date) {
         String taskId = UUID.randomUUID().toString();
-        tasks.put(taskId, new AsyncTask("PENDING", null));
-
-        executor.submit(() -> {
+        CompletableFuture<LogFileResult> future = CompletableFuture.supplyAsync(() -> {
             try {
-                LocalDate targetDate = parseDate(date);
-                validateDateNotInFuture(targetDate);
-                List<String> logs = getLogsForDate(targetDate);
+                List<String> logs = getLogsForDate(LocalDate.parse(date));
+
+                if (logs.isEmpty()) {
+                    return new LogFileResult(new ByteArrayResource(new byte[0]),
+                            LOGS + date + ".log");
+                }
+
                 String content = String.join("\n", logs);
                 ByteArrayResource resource = new ByteArrayResource(content.getBytes(StandardCharsets.UTF_8)) {
                     @Override
                     public String getFilename() {
-                        return "logs_" + date + ".log";
+                        return LOGS + date + ".log";
                     }
                 };
-                tasks.put(taskId, new AsyncTask("COMPLETED", resource));
+                return new LogFileResult(resource, LOGS + date + ".log");
             } catch (Exception e) {
-                tasks.put(taskId, new AsyncTask("FAILED", null));
+                throw new CompletionException("Failed to create log file", e);
             }
         });
 
+        future.whenComplete((result, ex) -> {
+            ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+            executor.schedule(() -> tasks.remove(taskId), 1, TimeUnit.HOURS);
+            executor.shutdown();
+        });
+        tasks.put(taskId, new TaskWrapper(future));
         return taskId;
     }
 
-    public String getTaskStatus(String taskId) {
-        AsyncTask task = tasks.get(taskId);
-        if (task == null) {
-            throw new NotFoundException("Task not found")
-                    .addDetail("taskId", taskId);
+    public Map<String, Object> getTaskStatus(String taskId) {
+        TaskWrapper wrapper = tasks.get(taskId);
+        if (wrapper == null) {
+            throw new NotFoundException("Task not found or expired")
+                    .addDetail(TASK_ID, taskId);
         }
-        return task.getStatus();
+        Map<String, Object> response = new HashMap<>();
+
+        if (wrapper.future.isDone()) {
+            try {
+                LogFileResult result = wrapper.future.get();
+                response.put(STATUS, "COMPLETED");
+                response.put("hasLogs", !result.isEmpty());
+                response.put("filename", result.getFilename());
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                response.put(STATUS, "FAILED");
+                response.put("error", "Task interrupted");
+            } catch (Exception e) {
+                response.put(STATUS, "FAILED");
+                response.put("error", e.getCause() != null ? e.getCause().getMessage() : e.getMessage());
+            }
+        } else {
+            response.put(STATUS, "PENDING");
+        }
+
+        return response;
     }
 
-    public ByteArrayResource getTaskLog(String taskId) {
-        AsyncTask task = tasks.get(taskId);
-        if (task == null) {
+    public LogFileResult getTaskLog(String taskId) throws IOException {
+        TaskWrapper wrapper = tasks.get(taskId);
+        if (wrapper == null) {
             throw new NotFoundException("Task not found")
-                    .addDetail("taskId", taskId);
+                    .addDetail(TASK_ID, taskId);
         }
-        if (!"COMPLETED".equals(task.getStatus())) {
+        if (!wrapper.future.isDone()) {
             throw new BusinessException("Task is not completed")
-                    .addDetail("status", task.getStatus());
+                    .addDetail(TASK_ID, taskId);
         }
-        return task.getResource();
+        try {
+            return wrapper.future.get();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IOException("Task interrupted", e);
+        } catch (ExecutionException e) {
+            tasks.remove(taskId);
+            throw new IOException("Failed to get log file", e.getCause());
+        } catch (CancellationException e) {
+            tasks.remove(taskId);
+            throw new IOException("Task was cancelled", e);
+        }
+    }
+
+    private void cleanupOldTasks() {
+        Iterator<Map.Entry<String, TaskWrapper>> iterator = tasks.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<String, TaskWrapper> entry = iterator.next();
+            TaskWrapper wrapper = entry.getValue();
+
+            if (wrapper.future.isDone() && wrapper.isOlderThan()) {
+                iterator.remove();
+            }
+        }
     }
 
     public List<String> getLogsForDate(LocalDate date) {
@@ -88,7 +169,7 @@ public class LogsService {
                     .filter(line -> isLineDateMatch(line, date))
                     .toList();
         } catch (IOException e) {
-            return Collections.emptyList(); // Обрабатываем IOException
+            return Collections.emptyList();
         }
     }
 
@@ -157,13 +238,41 @@ public class LogsService {
     }
 
     @Getter
-    private static class AsyncTask {
-        private final String status;
+    public static class LogFileResult {
         private final ByteArrayResource resource;
+        private final String filename;
+        private final boolean isEmpty;
 
-        public AsyncTask(String status, ByteArrayResource resource) {
-            this.status = status;
+        public LogFileResult(ByteArrayResource resource, String filename) {
             this.resource = resource;
+            this.filename = filename;
+            this.isEmpty = resource.contentLength() == 0;
+        }
+
+        public ByteArrayResource getResource() {
+            if (isEmpty) {
+                throw new IllegalStateException("No resource available (empty logs)");
+            }
+            return resource;
+        }
+
+        public long getContentLength() {
+            return isEmpty ? 0 : resource.contentLength();
+        }
+    }
+
+    private static class TaskWrapper {
+        final CompletableFuture<LogFileResult> future;
+        final long creationTime;
+
+        TaskWrapper(CompletableFuture<LogFileResult> future) {
+            this.future = future;
+            this.creationTime = System.currentTimeMillis();
+        }
+
+        boolean isOlderThan() {
+            long ageMillis = System.currentTimeMillis() - creationTime;
+            return ageMillis > TimeUnit.MINUTES.toMillis(LogsService.TASK_TTL_MINUTES);
         }
     }
 }
