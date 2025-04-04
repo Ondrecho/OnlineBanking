@@ -37,10 +37,12 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class LogsService {
-    private static final long TASK_TTL_MINUTES = 30;
+    private static final long TASK_TTL_MINUTES = 1;
+    private static final long CLEANUP_INTERVAL_MINUTES = 1;
     private static final String LOGS = "logs_";
     private static final String TASK_ID = "taskId";
     private static final String STATUS = "status";
+
     @Value("${logging.file.path:logs/application.current.log}")
     private String logFilePath;
     private final Map<String, TaskWrapper> tasks = new ConcurrentHashMap<>();
@@ -48,7 +50,12 @@ public class LogsService {
 
     @PostConstruct
     public void init() {
-        cleanupExecutor.scheduleAtFixedRate(this::cleanupOldTasks, 30, 30, TimeUnit.MINUTES);
+        cleanupExecutor.scheduleAtFixedRate(
+                this::cleanupOldTasks,
+                CLEANUP_INTERVAL_MINUTES,
+                CLEANUP_INTERVAL_MINUTES,
+                TimeUnit.MINUTES
+        );
     }
 
     @PreDestroy
@@ -69,6 +76,7 @@ public class LogsService {
         CompletableFuture<LogFileResult> future = CompletableFuture.supplyAsync(() -> {
             try {
                 List<String> logs = getLogsForDate(LocalDate.parse(date));
+                String filename = LOGS + date + ".log";
 
                 if (logs.isEmpty()) {
                     return new LogFileResult(new ByteArrayResource(new byte[0]),
@@ -79,38 +87,34 @@ public class LogsService {
                 ByteArrayResource resource = new ByteArrayResource(content.getBytes(StandardCharsets.UTF_8)) {
                     @Override
                     public String getFilename() {
-                        return LOGS + date + ".log";
+                        return filename;
                     }
                 };
-                return new LogFileResult(resource, LOGS + date + ".log");
+                return new LogFileResult(resource, filename);
             } catch (Exception e) {
                 throw new CompletionException("Failed to create log file", e);
             }
         });
 
-        future.whenComplete((result, ex) -> {
-            ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-            executor.schedule(() -> tasks.remove(taskId), 1, TimeUnit.HOURS);
-            executor.shutdown();
-        });
         tasks.put(taskId, new TaskWrapper(future));
         return taskId;
     }
 
     public Map<String, Object> getTaskStatus(String taskId) {
         TaskWrapper wrapper = tasks.get(taskId);
-        if (wrapper == null) {
+        if (wrapper == null || wrapper.isExpired(System.currentTimeMillis())) {
             throw new NotFoundException("Task not found or expired")
                     .addDetail(TASK_ID, taskId);
         }
         Map<String, Object> response = new HashMap<>();
 
-        if (wrapper.future.isDone()) {
+        if (wrapper.isDone()) {
             try {
-                LogFileResult result = wrapper.future.get();
+                LogFileResult result = wrapper.getResult();
                 response.put(STATUS, "COMPLETED");
                 response.put("hasLogs", !result.isEmpty());
                 response.put("filename", result.getFilename());
+                response.put("expires in", wrapper.calculateRemainingTime() + " seconds");
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 response.put(STATUS, "FAILED");
@@ -128,16 +132,16 @@ public class LogsService {
 
     public LogFileResult getTaskLog(String taskId) throws IOException {
         TaskWrapper wrapper = tasks.get(taskId);
-        if (wrapper == null) {
-            throw new NotFoundException("Task not found")
+        if (wrapper == null || wrapper.isExpired(System.currentTimeMillis())) {
+            throw new NotFoundException("Task not found or expired")
                     .addDetail(TASK_ID, taskId);
         }
-        if (!wrapper.future.isDone()) {
+        if (!wrapper.isDone()) {
             throw new BusinessException("Task is not completed")
                     .addDetail(TASK_ID, taskId);
         }
         try {
-            return wrapper.future.get();
+            return wrapper.getResult();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new IOException("Task interrupted", e);
@@ -151,12 +155,14 @@ public class LogsService {
     }
 
     private void cleanupOldTasks() {
+        long currentTime = System.currentTimeMillis();
         Iterator<Map.Entry<String, TaskWrapper>> iterator = tasks.entrySet().iterator();
+
         while (iterator.hasNext()) {
             Map.Entry<String, TaskWrapper> entry = iterator.next();
             TaskWrapper wrapper = entry.getValue();
 
-            if (wrapper.future.isDone() && wrapper.isOlderThan()) {
+            if (wrapper.isExpired(currentTime)) {
                 iterator.remove();
             }
         }
@@ -270,9 +276,23 @@ public class LogsService {
             this.creationTime = System.currentTimeMillis();
         }
 
-        boolean isOlderThan() {
-            long ageMillis = System.currentTimeMillis() - creationTime;
-            return ageMillis > TimeUnit.MINUTES.toMillis(LogsService.TASK_TTL_MINUTES);
+        boolean isExpired(long currentTime) {
+            long ageMillis = currentTime - creationTime;
+            return ageMillis > TimeUnit.MINUTES.toMillis(TASK_TTL_MINUTES);
+        }
+
+        private long calculateRemainingTime() {
+            long expirationTimeMillis = this.creationTime + TimeUnit.MINUTES.toMillis(TASK_TTL_MINUTES);
+            long remainingMillis = expirationTimeMillis - System.currentTimeMillis();
+            return Math.max(remainingMillis / 1000, 0);
+        }
+
+        boolean isDone() {
+            return future.isDone();
+        }
+
+        LogFileResult getResult() throws ExecutionException, InterruptedException {
+            return future.get();
         }
     }
 }
