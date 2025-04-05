@@ -162,7 +162,7 @@ public class LogsService {
             Map.Entry<String, TaskWrapper> entry = iterator.next();
             TaskWrapper wrapper = entry.getValue();
 
-            if (wrapper.isExpired(currentTime)) {
+            if (wrapper.isCompleted && wrapper.isExpired(currentTime)) {
                 iterator.remove();
             }
         }
@@ -268,23 +268,28 @@ public class LogsService {
     }
 
     private static class TaskWrapper {
-        final CompletableFuture<LogFileResult> future;
-        final long creationTime;
+        private final CompletableFuture<LogFileResult> future;
+        private volatile long expirationTime;
+        private boolean isCompleted = false;
 
         TaskWrapper(CompletableFuture<LogFileResult> future) {
             this.future = future;
-            this.creationTime = System.currentTimeMillis();
+            this.expirationTime = Long.MAX_VALUE;
+
+            future.whenComplete((result, ex) -> {
+                this.isCompleted = true;
+                this.expirationTime = System.currentTimeMillis() +
+                        TimeUnit.MINUTES.toMillis(TASK_TTL_MINUTES);
+            });
         }
 
         boolean isExpired(long currentTime) {
-            long ageMillis = currentTime - creationTime;
-            return ageMillis > TimeUnit.MINUTES.toMillis(TASK_TTL_MINUTES);
+            return currentTime > expirationTime;
         }
 
-        private long calculateRemainingTime() {
-            long expirationTimeMillis = this.creationTime + TimeUnit.MINUTES.toMillis(TASK_TTL_MINUTES);
-            long remainingMillis = expirationTimeMillis - System.currentTimeMillis();
-            return Math.max(remainingMillis / 1000, 0);
+        long calculateRemainingTime() {
+            long remaining = expirationTime - System.currentTimeMillis();
+            return TimeUnit.MILLISECONDS.toSeconds(Math.max(remaining, 0));
         }
 
         boolean isDone() {
