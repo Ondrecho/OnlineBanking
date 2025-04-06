@@ -63,7 +63,7 @@ public class LogsController {
     ) String date) {
         LocalDate targetDate = logsService.parseDate(date);
         logsService.validateDateNotInFuture(targetDate);
-        String taskId = logsService.createLogFileAsync(date);
+        String taskId = logsService.createLogFileAsync(targetDate);
 
         return ResponseEntity.accepted().body(Map.of("taskId", taskId));
     }

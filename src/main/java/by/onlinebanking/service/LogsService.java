@@ -71,11 +71,11 @@ public class LogsService {
         }
     }
 
-    public String createLogFileAsync(String date) {
+    public String createLogFileAsync(LocalDate date) {
         String taskId = UUID.randomUUID().toString();
         CompletableFuture<LogFileResult> future = CompletableFuture.supplyAsync(() -> {
             try {
-                List<String> logs = getLogsForDate(LocalDate.parse(date));
+                List<String> logs = getLogsForDate(date);
                 String filename = LOGS + date + ".log";
 
                 if (logs.isEmpty()) {
