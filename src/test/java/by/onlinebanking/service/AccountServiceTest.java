@@ -254,7 +254,6 @@ class AccountServiceTest {
     }
     @Test
     void processTransaction_Withdrawal_ProcessesSuccessfully() {
-        // Подготовка
         SingleAccountTransactionDto withdrawal = new SingleAccountTransactionDto();
         withdrawal.setTransactionType(TransactionType.WITHDRAWAL);
         withdrawal.setIban("TESTIBAN123");
@@ -263,10 +262,8 @@ class AccountServiceTest {
         when(accountRepository.findByIban("TESTIBAN123")).thenReturn(Optional.of(testAccount));
         doNothing().when(transactionValidator).validateTransaction(withdrawal);
 
-        // Выполнение
         TransactionResponseDto response = accountService.processTransaction(withdrawal);
 
-        // Проверки
         assertEquals("Withdrawal success: -100 USD", response.getMessage());
         assertEquals(HttpStatus.OK, response.getStatus());
         verify(accountRepository).save(testAccount);
@@ -274,7 +271,6 @@ class AccountServiceTest {
 
     @Test
     void processTransaction_Transfer_ProcessesSuccessfully() {
-        // Подготовка
         Account toAccount = new Account();
         toAccount.setIban("TOIBAN123");
         toAccount.setBalance(BigDecimal.ZERO);
@@ -290,10 +286,8 @@ class AccountServiceTest {
         when(accountRepository.findByIban("TOIBAN123")).thenReturn(Optional.of(toAccount));
         doNothing().when(transactionValidator).validateTransaction(transfer);
 
-        // Выполнение
         TransactionResponseDto response = accountService.processTransaction(transfer);
 
-        // Проверки
         assertEquals("Transfer 500 USD from TESTIBAN123 to TOIBAN123", response.getMessage());
         assertEquals(HttpStatus.OK, response.getStatus());
         verify(accountRepository, times(2)).save(any(Account.class));

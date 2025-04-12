@@ -46,14 +46,16 @@ public class SecurityConfig {
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**"
                         ).permitAll()
+
                         .requestMatchers(
-                                "/api/admin/users/**",
-                                "/api/admin/accounts/**",
-                                "/api/admin/logs/**"
+                                "/api/admin/**",
+                                "/api/logs/**",
+                                "/api/roles/**"
                         ).hasRole("ADMIN")
+
                         .requestMatchers(
-                                "/api/users/**",
-                                "/api/accounts/**",
+                                "/api/user/**",
+                                "/api/accounts/my/**",
                                 "/api/transactions/**"
                         ).hasRole("USER")
                         .anyRequest().authenticated()

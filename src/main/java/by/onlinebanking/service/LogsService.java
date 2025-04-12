@@ -28,7 +28,7 @@ public class LogsService {
                     .filter(line -> isLineDateMatch(line, date))
                     .toList();
         } catch (IOException e) {
-            return Collections.emptyList(); // Обрабатываем IOException
+            return Collections.emptyList();
         }
     }
 

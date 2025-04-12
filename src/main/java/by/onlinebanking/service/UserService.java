@@ -52,10 +52,9 @@ public class UserService {
     }
 
     @Transactional
+    @CacheEvict(value = "users", allEntries = true)
     public UserResponseDto registerUser(RegisterRequest request) {
-        if (userRepository.existsByEmail(request.getEmail())) {
-            throw new BusinessException("User with email already exists");
-        }
+        checkEmail(request.getEmail());
 
         User user = new User();
         user.setEmail(request.getEmail());
@@ -72,9 +71,7 @@ public class UserService {
     }
 
     public UserDetails loadUserByUsername(String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND)
-                        .addDetail(EMAIL, email));
+        User user = findByEmail(email);
 
         return org.springframework.security.core.userdetails.User
                 .withUsername(user.getEmail())
@@ -87,6 +84,12 @@ public class UserService {
         return new UserResponseDto(userRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND)
                         .addDetail(USER_ID, id)));
+    }
+
+    public User findByEmail(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND)
+                        .addDetail(EMAIL, email));
     }
 
     @Cacheable(value = "users")
@@ -127,14 +130,16 @@ public class UserService {
         User user = new User();
 
         setUserFields(userDto, user);
+        Set<Role> roles = rolesValidator.validateAndFindRoles(userDto.getRoles());
+        user.setRoles(roles);
 
         return new UserResponseDto(userRepository.save(user));
     }
 
-    private void checkEmail(String userDto) {
-        if (userRepository.existsByEmail(userDto)) {
+    private void checkEmail(String email) {
+        if (userRepository.existsByEmail(email)) {
             throw new BusinessException("User with email already exists")
-                    .addDetail(EMAIL, userDto);
+                    .addDetail(EMAIL, email);
         }
     }
 
@@ -148,6 +153,8 @@ public class UserService {
         checkEmail(userDto.getEmail());
 
         setUserFields(userDto, user);
+        Set<Role> roles = rolesValidator.validateAndFindRoles(userDto.getRoles());
+        user.setRoles(roles);
 
         return new UserResponseDto(userRepository.save(user));
     }
@@ -156,10 +163,7 @@ public class UserService {
         user.setFullName(userDto.getFullName());
         user.setEmail(userDto.getEmail());
         user.setDateOfBirth(userDto.getDateOfBirth());
-        user.setPassword(userDto.getPassword());
-
-        Set<Role> roles = rolesValidator.validateAndFindRoles(userDto.getRoles());
-        user.setRoles(roles);
+        user.setPassword(passwordEncoder.encode(userDto.getPassword()));
     }
 
     @Transactional
@@ -221,6 +225,8 @@ public class UserService {
                     User user = new User();
                     try {
                         setUserFields(dto, user);
+                        Set<Role> roles = rolesValidator.validateAndFindRoles(dto.getRoles());
+                        user.setRoles(roles);
                     } catch (ValidationException ex) {
                         throw new BusinessException("Invalid roles for user: " + dto.getEmail())
                                 .addDetail(EMAIL, dto.getEmail())

@@ -15,6 +15,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.crypto.password.PasswordEncoder;
+
 import java.time.LocalDate;
 import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -29,6 +31,9 @@ class UserServiceTest {
     @Mock
     private RolesValidator rolesValidator;
 
+    @Mock
+    private PasswordEncoder passwordEncoder;
+
     @InjectMocks
     private UserService usersService;
 
@@ -41,7 +46,6 @@ class UserServiceTest {
 
     @BeforeEach
     void setUp() {
-        // Setup test data
         roleDto = new RoleDto();
         roleDto.setName("ROLE_USER");
 
@@ -61,7 +65,7 @@ class UserServiceTest {
         updateUserDto.setFullName("Updated User");
         updateUserDto.setEmail("updated@example.com");
         updateUserDto.setDateOfBirth(LocalDate.of(1990, 1, 1));
-        updateUserDto.setPassword("newpassword123");
+        updateUserDto.setPassword(passwordEncoder.encode("newpassword123"));
         updateUserDto.setRoles(Set.of(roleDto));
 
         testUser = new User();
@@ -69,7 +73,7 @@ class UserServiceTest {
         testUser.setFullName("Test User");
         testUser.setEmail("test@example.com");
         testUser.setDateOfBirth(LocalDate.of(1990, 1, 1));
-        testUser.setPassword("password123");
+        testUser.setPassword(passwordEncoder.encode("password123"));
         testUser.setRoles(roles);
     }
 
@@ -270,7 +274,7 @@ class UserServiceTest {
         usersService.partialUpdateUser(1L, userDto);
 
         assertEquals("New Name", testUser.getFullName());
-        // Проверяем, что другие поля не изменились
+
         assertEquals("test@example.com", testUser.getEmail());
         verify(userRepository).save(testUser);
     }
@@ -307,14 +311,14 @@ class UserServiceTest {
     @Test
     void partialUpdateUser_UpdateOnlyPassword_UpdatesOnlyPassword() {
         UpdateUserDto userDto = new UpdateUserDto();
-        userDto.setPassword("newpassword");
+        userDto.setPassword(passwordEncoder.encode("newpassword"));
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
         when(userRepository.save(any(User.class))).thenReturn(testUser);
 
         usersService.partialUpdateUser(1L, userDto);
 
-        assertEquals("newpassword", testUser.getPassword());
+        assertEquals(passwordEncoder.encode("newpassword"), testUser.getPassword());
         verify(userRepository).save(testUser);
     }
 
@@ -333,10 +337,8 @@ class UserServiceTest {
         when(rolesValidator.validateAndFindRoles(Set.of(adminRoleDto))).thenReturn(Set.of(adminRole));
         when(userRepository.save(any(User.class))).thenReturn(testUser);
 
-        // 5. Вызываем тестируемый метод
         usersService.partialUpdateUser(1L, userDto);
 
-        // 6. Проверяем результаты
         assertEquals(1, testUser.getRoles().size());
         assertEquals("ADMIN", testUser.getRoles().iterator().next().getName());
         verify(userRepository).save(testUser);
@@ -401,7 +403,7 @@ class UserServiceTest {
         invalidUserDto.setFullName("Invalid User");
         invalidUserDto.setEmail("invalid@example.com");
         invalidUserDto.setDateOfBirth(LocalDate.of(1990, 1, 1));
-        invalidUserDto.setPassword("password123");
+        invalidUserDto.setPassword(passwordEncoder.encode("password123"));
 
         RoleDto invalidRoleDto = new RoleDto();
         invalidRoleDto.setName("INVALID_ROLE");
@@ -433,7 +435,7 @@ class UserServiceTest {
         duplicateDto.setEmail("test@example.com");
         duplicateDto.setFullName("Duplicate User");
         duplicateDto.setDateOfBirth(LocalDate.of(1990, 1, 1));
-        duplicateDto.setPassword("password123");
+        duplicateDto.setPassword(passwordEncoder.encode("password123"));
         duplicateDto.setRoles(Set.of(roleDto));
 
         List<CreateUserDto> userDtos = List.of(createUserDto, duplicateDto);

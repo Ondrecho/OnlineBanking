@@ -1,5 +1,6 @@
 package by.onlinebanking.security.dto.request;
 
+import by.onlinebanking.dto.user.UserBaseDto;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -13,7 +14,7 @@ import lombok.ToString;
 
 @Getter
 @Setter
-public class RegisterRequest {
+public class RegisterRequest implements UserBaseDto {
     @NotBlank(message = "Full name is required")
     @Size(min = 2, max = 100, message = "Full name must be between 2 and 100 characters")
     @Pattern(regexp = "^[a-zA-Z\\s]+$",
