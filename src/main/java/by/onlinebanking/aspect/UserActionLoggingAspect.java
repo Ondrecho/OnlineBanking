@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 @Aspect
 @Component
 public class UserActionLoggingAspect {
-    private final Logger logger = LoggerFactory.getLogger(this.getClass());
+    private static final Logger LOGGER = LoggerFactory.getLogger(UserActionLoggingAspect.class);
 
     @AfterReturning(
             pointcut = "execution(* by.onlinebanking.controller..*(..))",
@@ -21,7 +21,7 @@ public class UserActionLoggingAspect {
         String methodName = joinPoint.getSignature().toShortString();
         Object[] args = joinPoint.getArgs();
 
-        logger.info("User action: {} | Arguments: {} | Result: {}", methodName, args, result);
+        LOGGER.info("User action: {} | Arguments: {} | Result: {}", methodName, args, result);
     }
 
     @AfterReturning(
@@ -30,6 +30,6 @@ public class UserActionLoggingAspect {
     )
     public void logBulkCreate(JoinPoint joinPoint, Object result) {
         Object[] args = joinPoint.getArgs();
-        logger.info("Bulk user creation | Count: {} | Result: {}", ((List<?>) args[0]).size(), result);
+        LOGGER.info("Bulk user creation | Count: {} | Result: {}", ((List<?>) args[0]).size(), result);
     }
 }

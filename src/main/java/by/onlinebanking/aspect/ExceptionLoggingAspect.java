@@ -10,17 +10,18 @@ import org.springframework.stereotype.Component;
 @Aspect
 @Component
 public class ExceptionLoggingAspect {
-    private final Logger logger = LoggerFactory.getLogger(this.getClass());
+    private static final Logger LOGGER = LoggerFactory.getLogger(ExceptionLoggingAspect.class);
 
     @AfterThrowing(
-            pointcut = "execution(* by.onlinebanking..*.*(..))",
+            pointcut = "execution(* by.onlinebanking..*.*(..)) && " +
+                       "!within(by.onlinebanking.filter..*)",
             throwing = "ex"
     )
     public void logException(JoinPoint joinPoint, Throwable ex) {
         String methodName = joinPoint.getSignature().toShortString();
         Object[] args = joinPoint.getArgs();
 
-        logger.error(
+        LOGGER.error(
                 "Exception in method: {} | Arguments: {} | Message: {} | Reason: {}",
                 methodName, args, ex.getMessage(), ex.getCause() != null ? ex.getCause() : "N/A",
                 ex
