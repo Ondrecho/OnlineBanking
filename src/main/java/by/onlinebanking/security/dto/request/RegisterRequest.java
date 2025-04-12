@@ -1,6 +1,5 @@
 package by.onlinebanking.security.dto.request;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -35,6 +34,5 @@ public class RegisterRequest {
             message = "Password must contain at least one letter and one number"
     )
     @ToString.Exclude
-    @JsonIgnore
     private String password;
 }

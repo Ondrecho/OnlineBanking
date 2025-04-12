@@ -24,6 +24,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
@@ -32,6 +33,7 @@ import org.springframework.validation.annotation.Validated;
 public class UserService {
     private static final String USER_ID = "userId";
     private static final String USER_NOT_FOUND = "User not found";
+    private static final String EMAIL = "email";
 
     private final UserRepository userRepository;
     private final RolesValidator rolesValidator;
@@ -58,6 +60,7 @@ public class UserService {
         User user = new User();
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setFullName(request.getFullName());
         user.setDateOfBirth(request.getDateOfBirth());
 
         Role userRole = roleRepository.findByName("ROLE_USER")
@@ -66,6 +69,18 @@ public class UserService {
         user.getRoles().add(userRole);
 
         return new UserResponseDto(userRepository.save(user));
+    }
+
+    public UserDetails loadUserByUsername(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND)
+                        .addDetail(EMAIL, email));
+
+        return org.springframework.security.core.userdetails.User
+                .withUsername(user.getEmail())
+                .password(user.getPassword())
+                .authorities(user.getRoles())
+                .build();
     }
 
     public UserResponseDto getUserById(Long id) {
@@ -119,7 +134,7 @@ public class UserService {
     private void checkEmail(String userDto) {
         if (userRepository.existsByEmail(userDto)) {
             throw new BusinessException("User with email already exists")
-                    .addDetail("email", userDto);
+                    .addDetail(EMAIL, userDto);
         }
     }
 
@@ -208,7 +223,7 @@ public class UserService {
                         setUserFields(dto, user);
                     } catch (ValidationException ex) {
                         throw new BusinessException("Invalid roles for user: " + dto.getEmail())
-                                .addDetail("email", dto.getEmail())
+                                .addDetail(EMAIL, dto.getEmail())
                                 .addDetail("error", ex.getMessage());
                     }
                     return user;

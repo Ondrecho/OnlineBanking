@@ -13,7 +13,8 @@ public class LoggingAspect {
     private static final Logger LOGGER = LoggerFactory.getLogger(LoggingAspect.class);
 
     @Around("(execution(* by.onlinebanking.controller..*(..)) || " +
-            "execution(* by.onlinebanking.service..*(..))) && " +
+            "execution(* by.onlinebanking.service..*(..)) ||" +
+            " execution(* by.onlinebanking.security.service..*(..))) && " +
             "!within(by.onlinebanking.service.LogsService)")
     public Object logMethodExecution(ProceedingJoinPoint joinPoint) throws Throwable {
         String methodName = joinPoint.getSignature().toShortString();

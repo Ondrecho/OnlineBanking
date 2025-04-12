@@ -33,27 +33,16 @@ public class JwtService {
                 .compact();
     }
 
-    public boolean validateToken(String token, UserDetails userDetails) {
+    public boolean validateToken(String token) {
         try {
-            final String username = extractUsername(token);
-            return username.equals(userDetails.getUsername()) &&
-                    !isTokenExpired(token);
+            Jwts.parser()
+                    .verifyWith(secretKey)
+                    .build()
+                    .parseSignedClaims(token);
+            return true;
         } catch (JwtException | IllegalArgumentException e) {
             return false;
         }
-    }
-
-    private boolean isTokenExpired(String token) {
-        return extractExpiration(token).before(new Date());
-    }
-
-    private Date extractExpiration(String token) {
-        return Jwts.parser()
-                .verifyWith(secretKey)
-                .build()
-                .parseSignedClaims(token)
-                .getPayload()
-                .getExpiration();
     }
 
     public String extractUsername(String token) {
