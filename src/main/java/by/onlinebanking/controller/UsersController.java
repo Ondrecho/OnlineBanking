@@ -30,7 +30,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/public/users")
+@RequestMapping("/api/users")
 @Validated
 public class UsersController {
     private final UserService userService;

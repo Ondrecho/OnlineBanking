@@ -9,6 +9,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import javax.crypto.SecretKey;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
@@ -35,13 +36,15 @@ public class JwtService {
 
     public boolean validateToken(String token) {
         try {
-            Jwts.parser()
+            var claims = Jwts.parser()
                     .verifyWith(secretKey)
                     .build()
-                    .parseSignedClaims(token);
-            return true;
-        } catch (JwtException | IllegalArgumentException e) {
-            return false;
+                    .parseSignedClaims(token)
+                    .getPayload();
+
+            return !claims.getExpiration().before(new Date());
+        } catch (JwtException e) {
+            throw new BadCredentialsException("Invalid JWT");
         }
     }
 
