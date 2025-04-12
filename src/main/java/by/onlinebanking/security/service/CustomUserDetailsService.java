@@ -1,4 +1,4 @@
-package by.onlinebanking.service;
+package by.onlinebanking.security.service;
 
 import by.onlinebanking.exception.NotFoundException;
 import by.onlinebanking.repository.UserRepository;

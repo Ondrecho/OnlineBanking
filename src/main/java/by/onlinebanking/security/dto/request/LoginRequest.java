@@ -1,4 +1,4 @@
-package by.onlinebanking.dto.request;
+package by.onlinebanking.security.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.constraints.Email;

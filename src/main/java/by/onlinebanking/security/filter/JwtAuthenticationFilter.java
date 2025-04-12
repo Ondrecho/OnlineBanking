@@ -1,7 +1,7 @@
-package by.onlinebanking.filter;
+package by.onlinebanking.security.filter;
 
-import by.onlinebanking.service.CustomUserDetailsService;
-import by.onlinebanking.service.JwtService;
+import by.onlinebanking.security.service.CustomUserDetailsService;
+import by.onlinebanking.security.service.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

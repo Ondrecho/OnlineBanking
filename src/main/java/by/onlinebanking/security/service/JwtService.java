@@ -1,6 +1,6 @@
-package by.onlinebanking.service;
+package by.onlinebanking.security.service;
 
-import by.onlinebanking.config.JwtProperties;
+import by.onlinebanking.security.config.JwtProperties;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;

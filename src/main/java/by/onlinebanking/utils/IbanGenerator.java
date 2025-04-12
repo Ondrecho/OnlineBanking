@@ -1,4 +1,4 @@
-package by.onlinebanking.service.utils;
+package by.onlinebanking.utils;
 
 import java.math.BigInteger;
 import java.security.SecureRandom;

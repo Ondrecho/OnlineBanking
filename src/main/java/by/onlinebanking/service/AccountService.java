@@ -13,7 +13,7 @@ import by.onlinebanking.model.enums.AccountStatus;
 import by.onlinebanking.model.enums.Currency;
 import by.onlinebanking.repository.AccountRepository;
 import by.onlinebanking.repository.UserRepository;
-import by.onlinebanking.service.utils.IbanGenerator;
+import by.onlinebanking.utils.IbanGenerator;
 import by.onlinebanking.validation.TransactionValidator;
 import jakarta.transaction.Transactional;
 import java.math.BigDecimal;

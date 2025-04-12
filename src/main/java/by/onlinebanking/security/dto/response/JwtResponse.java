@@ -1,4 +1,4 @@
-package by.onlinebanking.dto.response;
+package by.onlinebanking.security.dto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

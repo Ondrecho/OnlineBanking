@@ -1,7 +1,7 @@
-package by.onlinebanking.config;
+package by.onlinebanking.security.config;
 
-import by.onlinebanking.filter.JwtAuthenticationFilter;
-import by.onlinebanking.service.CustomUserDetailsService;
+import by.onlinebanking.security.filter.JwtAuthenticationFilter;
+import by.onlinebanking.security.service.CustomUserDetailsService;
 import java.util.Arrays;
 import java.util.List;
 import lombok.RequiredArgsConstructor;

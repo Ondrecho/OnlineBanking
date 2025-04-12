@@ -1,4 +1,4 @@
-package by.onlinebanking.config;
+package by.onlinebanking.security.config;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;

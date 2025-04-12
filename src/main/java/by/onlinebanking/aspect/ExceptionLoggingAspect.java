@@ -14,7 +14,7 @@ public class ExceptionLoggingAspect {
 
     @AfterThrowing(
             pointcut = "execution(* by.onlinebanking..*.*(..)) && " +
-                       "!within(by.onlinebanking.filter..*)",
+                       "!within(by.onlinebanking.security.filter..*)",
             throwing = "ex"
     )
     public void logException(JoinPoint joinPoint, Throwable ex) {

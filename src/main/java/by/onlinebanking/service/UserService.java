@@ -1,6 +1,5 @@
 package by.onlinebanking.service;
 
-import by.onlinebanking.dto.request.RegisterRequest;
 import by.onlinebanking.dto.response.UserResponseDto;
 import by.onlinebanking.dto.user.CreateUserDto;
 import by.onlinebanking.dto.user.UpdateUserDto;
@@ -12,6 +11,7 @@ import by.onlinebanking.model.Role;
 import by.onlinebanking.model.User;
 import by.onlinebanking.repository.RoleRepository;
 import by.onlinebanking.repository.UserRepository;
+import by.onlinebanking.security.dto.request.RegisterRequest;
 import by.onlinebanking.specifications.UserSpecifications;
 import by.onlinebanking.validation.RolesValidator;
 import by.onlinebanking.validation.interfaces.OnPatch;
