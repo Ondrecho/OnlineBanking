@@ -55,9 +55,9 @@ public class SecurityConfig {
 
                         .requestMatchers(
                                 "/api/user/**",
-                                "/api/accounts/my/**",
                                 "/api/transactions/**"
                         ).hasRole("USER")
+
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session

@@ -16,12 +16,13 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class AuthService {
     private final UserService userService;
+    private final CustomUserDetailsService userDetailsService;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
 
     public JwtResponse register(RegisterRequest request) {
         UserResponseDto user = userService.registerUser(request);
-        UserDetails userDetails = userService.loadUserByUsername(user.getEmail());
+        UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
         String token = jwtService.generateToken(userDetails);
         return new JwtResponse(token);
     }

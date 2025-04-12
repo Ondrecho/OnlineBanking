@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
-    private static final String VALIDATIONERROR = "VALIDATION_ERROR";
+    private static final String VALIDATION_ERROR = "VALIDATION_ERROR";
     private static final String FIELD = "field";
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -32,7 +32,7 @@ public class GlobalExceptionHandler {
         });
 
         ErrorResponse response = new ErrorResponse(
-                VALIDATIONERROR,
+                VALIDATION_ERROR,
                 "Validation failed",
                 errors
         );
@@ -66,7 +66,7 @@ public class GlobalExceptionHandler {
                 .toList();
 
         return ResponseEntity.badRequest().body(
-                new ErrorResponse(VALIDATIONERROR, "Validation failed", Map.of("errors", errors))
+                new ErrorResponse(VALIDATION_ERROR, "Validation failed", Map.of("errors", errors))
         );
     }
 
@@ -75,6 +75,7 @@ public class GlobalExceptionHandler {
         HttpStatus status = switch (ex.getErrorCode()) {
             case "NOT_FOUND" -> HttpStatus.NOT_FOUND;
             case "BUSINESS_ERROR" -> HttpStatus.CONFLICT;
+            case "ACCESS_DENIED" -> HttpStatus.FORBIDDEN;
             default -> HttpStatus.BAD_REQUEST;
         };
 
@@ -145,7 +146,7 @@ public class GlobalExceptionHandler {
         String message = "Invalid request: Unknown field '" + unknownField + "'";
 
         ErrorResponse response = new ErrorResponse(
-                VALIDATIONERROR,
+                VALIDATION_ERROR,
                 message,
                 Map.of("unknownFields", Collections.singletonList(unknownField))
         );

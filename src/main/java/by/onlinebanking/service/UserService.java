@@ -12,6 +12,7 @@ import by.onlinebanking.model.User;
 import by.onlinebanking.repository.RoleRepository;
 import by.onlinebanking.repository.UserRepository;
 import by.onlinebanking.security.dto.request.RegisterRequest;
+import by.onlinebanking.security.model.AuthenticatedUser;
 import by.onlinebanking.specifications.UserSpecifications;
 import by.onlinebanking.validation.RolesValidator;
 import by.onlinebanking.validation.interfaces.OnPatch;
@@ -24,7 +25,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
@@ -70,26 +72,16 @@ public class UserService {
         return new UserResponseDto(userRepository.save(user));
     }
 
-    public UserDetails loadUserByUsername(String email) {
-        User user = findByEmail(email);
-
-        return org.springframework.security.core.userdetails.User
-                .withUsername(user.getEmail())
-                .password(user.getPassword())
-                .authorities(user.getRoles())
-                .build();
-    }
-
     public UserResponseDto getUserById(Long id) {
         return new UserResponseDto(userRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND)
                         .addDetail(USER_ID, id)));
     }
 
-    public User findByEmail(String email) {
-        return userRepository.findByEmail(email)
-                .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND)
-                        .addDetail(EMAIL, email));
+    public User getUserFromAuthentication() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        AuthenticatedUser authenticatedUser = (AuthenticatedUser) authentication.getPrincipal();
+        return authenticatedUser.getUser();
     }
 
     @Cacheable(value = "users")
