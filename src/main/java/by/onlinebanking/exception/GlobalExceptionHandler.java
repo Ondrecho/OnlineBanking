@@ -2,7 +2,9 @@ package by.onlinebanking.exception;
 
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -75,7 +77,6 @@ public class GlobalExceptionHandler {
         HttpStatus status = switch (ex.getErrorCode()) {
             case "NOT_FOUND" -> HttpStatus.NOT_FOUND;
             case "BUSINESS_ERROR" -> HttpStatus.CONFLICT;
-            case "ACCESS_DENIED" -> HttpStatus.FORBIDDEN;
             default -> HttpStatus.BAD_REQUEST;
         };
 
@@ -152,5 +153,25 @@ public class GlobalExceptionHandler {
         );
 
         return ResponseEntity.badRequest().body(response);
+    }
+
+    @ExceptionHandler({
+            org.springframework.security.access.AccessDeniedException.class
+    })
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public ResponseEntity<ErrorResponse> handleAccessDeniedExceptions(
+            Exception ex,
+            HttpServletRequest request) {
+        Map<String, Object> details = new HashMap<>();
+        details.put("path", request.getRequestURI());
+        details.put("timestamp", LocalDateTime.now());
+
+        ErrorResponse response = new ErrorResponse(
+                "ACCESS_DENIED",
+                ex.getMessage(),
+                details
+        );
+
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
     }
 }

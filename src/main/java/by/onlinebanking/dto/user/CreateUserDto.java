@@ -1,7 +1,6 @@
 package by.onlinebanking.dto.user;
 
 import by.onlinebanking.dto.role.RoleDto;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -40,7 +39,6 @@ public class CreateUserDto implements UserBaseDto {
             message = "Password must contain at least one letter and one number"
     )
     @ToString.Exclude
-    @JsonIgnore
     private String password;
 
     @NotEmpty(message = "At least one role is required")
