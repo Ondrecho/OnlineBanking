@@ -25,6 +25,10 @@ public class JwtService {
 
     public String generateToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
+
+        claims.put("isAdmin", userDetails.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN")));
+
         return Jwts.builder()
                 .claims(claims)
                 .subject(userDetails.getUsername())

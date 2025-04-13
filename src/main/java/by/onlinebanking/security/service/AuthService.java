@@ -24,7 +24,11 @@ public class AuthService {
         UserResponseDto user = userService.registerUser(request);
         UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
         String token = jwtService.generateToken(userDetails);
-        return new JwtResponse(token);
+
+        boolean isAdmin = userDetails.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+        return new JwtResponse(token, isAdmin);
     }
 
     public JwtResponse login(LoginRequest request) {
@@ -37,6 +41,10 @@ public class AuthService {
 
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
         String token = jwtService.generateToken(userDetails);
-        return new JwtResponse(token);
+
+        boolean isAdmin = userDetails.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+        return new JwtResponse(token, isAdmin);
     }
 }

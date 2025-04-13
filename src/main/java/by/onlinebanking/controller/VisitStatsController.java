@@ -1,5 +1,6 @@
-package by.onlinebanking.stats;
+package by.onlinebanking.controller;
 
+import by.onlinebanking.stats.service.VisitCounterService;
 import java.util.Map;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;

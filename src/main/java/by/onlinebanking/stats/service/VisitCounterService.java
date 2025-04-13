@@ -1,5 +1,6 @@
-package by.onlinebanking.stats;
+package by.onlinebanking.stats.service;
 
+import by.onlinebanking.stats.VisitStats;
 import java.util.Map;
 import org.springframework.stereotype.Service;
 

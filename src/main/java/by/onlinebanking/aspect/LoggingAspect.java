@@ -15,7 +15,7 @@ public class LoggingAspect {
     @Around("(execution(* by.onlinebanking.controller..*(..)) || " +
             "execution(* by.onlinebanking.service..*(..)) ||" +
             " execution(* by.onlinebanking.security.service..*(..))) && " +
-            "!within(by.onlinebanking.service.LogsService)")
+            "!within(by.onlinebanking.logs.service.LogsService)")
     public Object logMethodExecution(ProceedingJoinPoint joinPoint) throws Throwable {
         String methodName = joinPoint.getSignature().toShortString();
         LOGGER.info("Method invocation: {} | Arguments: {}", methodName, joinPoint.getArgs());

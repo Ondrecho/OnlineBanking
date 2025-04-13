@@ -1,5 +1,6 @@
-package by.onlinebanking.stats;
+package by.onlinebanking.stats.config;
 
+import by.onlinebanking.stats.filter.VisitCountingFilter;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
