@@ -73,10 +73,10 @@ public class AccountService {
                     .addDetail("iban", account.getIban());
         }
 
-        if (account.getBalance().compareTo(BigDecimal.ZERO) > 0) {
-            throw new BusinessException("You cannot close an account with a positive balance.")
-                    .addDetail("iban", account.getIban());
-        }
+//        if (account.getBalance().compareTo(BigDecimal.ZERO) > 0) {
+//            throw new BusinessException("You cannot close an account with a positive balance.")
+//                    .addDetail("iban", account.getIban());
+//        }
 
         account.setStatus(AccountStatus.CLOSED);
         accountRepository.save(account);
@@ -114,10 +114,10 @@ public class AccountService {
                 .orElseThrow(() -> new NotFoundException(ACCOUNT_NOT_FOUND)
                         .addDetail("iban", iban));
 
-        if (account.getStatus() != AccountStatus.CLOSED) {
-            throw new BusinessException("Account is not closed")
-                    .addDetail("iban", iban);
-        }
+//        if (account.getStatus() != AccountStatus.CLOSED) {
+//            throw new BusinessException("Account is not closed")
+//                    .addDetail("iban", iban);
+//        }
 
         accountRepository.delete(account);
 

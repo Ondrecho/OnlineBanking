@@ -6,7 +6,11 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class VisitCounterService {
-    private final VisitStats visitStats = new VisitStats();
+    private final VisitStats visitStats;
+
+    public VisitCounterService(VisitStats visitStats) {
+        this.visitStats = visitStats;
+    }
 
     public synchronized void recordVisit(String url) {
         visitStats.recordVisit(url);

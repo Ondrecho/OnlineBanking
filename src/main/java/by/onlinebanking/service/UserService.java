@@ -142,7 +142,7 @@ public class UserService {
                 .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND)
                         .addDetail(USER_ID, id));
 
-        checkEmail(userDto.getEmail());
+        checkEmailUniqueness(userDto.getEmail(), user.getId());
 
         setUserFields(userDto, user);
         Set<Role> roles = rolesValidator.validateAndFindRoles(userDto.getRoles());
@@ -165,11 +165,20 @@ public class UserService {
                 .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND)
                         .addDetail(USER_ID, id));
 
-        checkEmail(userDto.getEmail());
+        if (userDto.getEmail() != null) {
+            checkEmailUniqueness(userDto.getEmail(), user.getId()); // Измененная проверка
+        }
 
         updateUserFields(userDto, user);
 
         return new UserResponseDto(userRepository.save(user));
+    }
+
+    private void checkEmailUniqueness(String email, Long currentUserId) {
+        if (userRepository.existsByEmailAndIdNot(email, currentUserId)) {
+            throw new BusinessException("Email already taken by another user")
+                    .addDetail("email", email);
+        }
     }
 
     private void updateUserFields(UpdateUserDto userDto, User user) {

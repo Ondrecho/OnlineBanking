@@ -10,6 +10,7 @@ import by.onlinebanking.repository.AccountRepository;
 import by.onlinebanking.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,21 +23,36 @@ public class AccountSecurityService {
 
     @Transactional(readOnly = true)
     public Account validateAndGetAccount(String iban) {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new AccessDeniedException("Authentication required");
+        }
+
         Account account = accountRepository.findByIban(iban)
                 .orElseThrow(() -> new NotFoundException("Account not found")
                         .addDetail("iban", iban));
 
-        User user = userRepository.findByEmailWithRoles(email)
+        User currentUser = userRepository.findByEmailWithRoles(authentication.getName())
                 .orElseThrow(() -> new NotFoundException("User not found")
-                .addDetail("email", email));
+                        .addDetail("email", authentication.getName()));
 
-        if (user.getRoles().stream().noneMatch(r -> r.getName().equals("ROLE_ADMIN")) &&
-                !account.getUser().getId().equals(user.getId())) {
-            throw new AccessDeniedException("This operation is available only to administrators");
+        if (!hasAccess(account, currentUser)) {
+            throw new AccessDeniedException(String.format(
+                    "Access denied. User %s has no rights for account %s",
+                    currentUser.getEmail(),
+                    iban
+            ));
         }
 
         return account;
+    }
+
+    private boolean hasAccess(Account account, User user) {
+        if (user.getRoles().stream().anyMatch(r -> r.getName().equals("ROLE_ADMIN"))) {
+            return true;
+        }
+
+        return account.getUser().getId().equals(user.getId());
     }
 
     public boolean canPerformTransaction(BaseTransactionDto transaction, String email) {

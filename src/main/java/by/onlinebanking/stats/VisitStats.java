@@ -4,7 +4,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import org.springframework.stereotype.Component;
 
+@Component
 public class VisitStats {
     private final ConcurrentHashMap<String, AtomicLong> urlCounters = new ConcurrentHashMap<>();
 
