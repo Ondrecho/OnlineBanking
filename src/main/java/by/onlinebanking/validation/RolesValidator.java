@@ -1,6 +1,6 @@
 package by.onlinebanking.validation;
 
-import by.onlinebanking.dto.RoleDto;
+import by.onlinebanking.dto.role.RoleDto;
 import by.onlinebanking.exception.ValidationException;
 import by.onlinebanking.model.Role;
 import by.onlinebanking.repository.RoleRepository;

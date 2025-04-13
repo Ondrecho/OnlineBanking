@@ -1,15 +1,18 @@
 package by.onlinebanking.service;
 
-import by.onlinebanking.dto.CreateUserDto;
-import by.onlinebanking.dto.UpdateUserDto;
-import by.onlinebanking.dto.UserBaseDto;
-import by.onlinebanking.dto.UserResponseDto;
+import by.onlinebanking.dto.response.UserResponseDto;
+import by.onlinebanking.dto.user.CreateUserDto;
+import by.onlinebanking.dto.user.UpdateUserDto;
+import by.onlinebanking.dto.user.UserBaseDto;
 import by.onlinebanking.exception.BusinessException;
 import by.onlinebanking.exception.NotFoundException;
 import by.onlinebanking.exception.ValidationException;
 import by.onlinebanking.model.Role;
 import by.onlinebanking.model.User;
+import by.onlinebanking.repository.RoleRepository;
 import by.onlinebanking.repository.UserRepository;
+import by.onlinebanking.security.dto.request.RegisterRequest;
+import by.onlinebanking.security.model.AuthenticatedUser;
 import by.onlinebanking.specifications.UserSpecifications;
 import by.onlinebanking.validation.RolesValidator;
 import by.onlinebanking.validation.interfaces.OnPatch;
@@ -22,6 +25,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
@@ -29,21 +35,53 @@ import org.springframework.validation.annotation.Validated;
 public class UserService {
     private static final String USER_ID = "userId";
     private static final String USER_NOT_FOUND = "User not found";
+    private static final String EMAIL = "email";
 
     private final UserRepository userRepository;
     private final RolesValidator rolesValidator;
+    private final RoleRepository roleRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Autowired
     public UserService(UserRepository userRepository,
-                       RolesValidator rolesValidator) {
+                       RolesValidator rolesValidator,
+                       RoleRepository roleRepository,
+                       PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.rolesValidator = rolesValidator;
+        this.roleRepository = roleRepository;
+        this.passwordEncoder = passwordEncoder;
+    }
+
+    @Transactional
+    @CacheEvict(value = "users", allEntries = true)
+    public UserResponseDto registerUser(RegisterRequest request) {
+        checkEmail(request.getEmail());
+
+        User user = new User();
+        user.setEmail(request.getEmail());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setFullName(request.getFullName());
+        user.setDateOfBirth(request.getDateOfBirth());
+
+        Role userRole = roleRepository.findByName("ROLE_USER")
+                .orElseThrow(() -> new NotFoundException("Role ROLE_USER not found"));
+
+        user.getRoles().add(userRole);
+
+        return new UserResponseDto(userRepository.save(user));
     }
 
     public UserResponseDto getUserById(Long id) {
         return new UserResponseDto(userRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND)
                         .addDetail(USER_ID, id)));
+    }
+
+    public User getUserFromAuthentication() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        AuthenticatedUser authenticatedUser = (AuthenticatedUser) authentication.getPrincipal();
+        return authenticatedUser.getUser();
     }
 
     @Cacheable(value = "users")
@@ -84,14 +122,16 @@ public class UserService {
         User user = new User();
 
         setUserFields(userDto, user);
+        Set<Role> roles = rolesValidator.validateAndFindRoles(userDto.getRoles());
+        user.setRoles(roles);
 
         return new UserResponseDto(userRepository.save(user));
     }
 
-    private void checkEmail(String userDto) {
-        if (userRepository.existsByEmail(userDto)) {
+    private void checkEmail(String email) {
+        if (userRepository.existsByEmail(email)) {
             throw new BusinessException("User with email already exists")
-                    .addDetail("email", userDto);
+                    .addDetail(EMAIL, email);
         }
     }
 
@@ -105,6 +145,8 @@ public class UserService {
         checkEmail(userDto.getEmail());
 
         setUserFields(userDto, user);
+        Set<Role> roles = rolesValidator.validateAndFindRoles(userDto.getRoles());
+        user.setRoles(roles);
 
         return new UserResponseDto(userRepository.save(user));
     }
@@ -113,10 +155,7 @@ public class UserService {
         user.setFullName(userDto.getFullName());
         user.setEmail(userDto.getEmail());
         user.setDateOfBirth(userDto.getDateOfBirth());
-        user.setPassword(userDto.getPassword());
-
-        Set<Role> roles = rolesValidator.validateAndFindRoles(userDto.getRoles());
-        user.setRoles(roles);
+        user.setPassword(passwordEncoder.encode(userDto.getPassword()));
     }
 
     @Transactional
@@ -178,9 +217,11 @@ public class UserService {
                     User user = new User();
                     try {
                         setUserFields(dto, user);
+                        Set<Role> roles = rolesValidator.validateAndFindRoles(dto.getRoles());
+                        user.setRoles(roles);
                     } catch (ValidationException ex) {
                         throw new BusinessException("Invalid roles for user: " + dto.getEmail())
-                                .addDetail("email", dto.getEmail())
+                                .addDetail(EMAIL, dto.getEmail())
                                 .addDetail("error", ex.getMessage());
                     }
                     return user;

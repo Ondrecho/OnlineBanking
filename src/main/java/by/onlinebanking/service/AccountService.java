@@ -1,10 +1,7 @@
 package by.onlinebanking.service;
 
-import by.onlinebanking.dto.AccountDto;
-import by.onlinebanking.dto.BaseTransactionDto;
-import by.onlinebanking.dto.SingleAccountTransactionDto;
-import by.onlinebanking.dto.TransactionResponseDto;
-import by.onlinebanking.dto.TransferTransactionDto;
+import by.onlinebanking.dto.account.AccountDto;
+import by.onlinebanking.dto.response.OperationResponseDto;
 import by.onlinebanking.exception.BusinessException;
 import by.onlinebanking.exception.NotFoundException;
 import by.onlinebanking.model.Account;
@@ -13,8 +10,7 @@ import by.onlinebanking.model.enums.AccountStatus;
 import by.onlinebanking.model.enums.Currency;
 import by.onlinebanking.repository.AccountRepository;
 import by.onlinebanking.repository.UserRepository;
-import by.onlinebanking.service.utils.IbanGenerator;
-import by.onlinebanking.validation.TransactionValidator;
+import by.onlinebanking.utils.IbanGenerator;
 import jakarta.transaction.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -22,6 +18,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -30,15 +27,12 @@ public class AccountService {
 
     private final AccountRepository accountRepository;
     private final UserRepository userRepository;
-    private final TransactionValidator transactionValidator;
 
     @Autowired
     public AccountService(AccountRepository accountRepository,
-                          UserRepository userRepository,
-                          TransactionValidator transactionValidator) {
+                          UserRepository userRepository) {
         this.accountRepository = accountRepository;
         this.userRepository = userRepository;
-        this.transactionValidator = transactionValidator;
     }
 
     public List<AccountDto> getAccountsByUserId(Long userId) {
@@ -73,25 +67,21 @@ public class AccountService {
 
     @Transactional
     @CacheEvict(value = "users", allEntries = true)
-    public TransactionResponseDto closeAccount(String iban) {
-        Account account = accountRepository.findByIban(iban)
-                .orElseThrow(() -> new NotFoundException(ACCOUNT_NOT_FOUND)
-                        .addDetail("iban", iban));
-
+    public OperationResponseDto closeAccount(Account account) {
         if (account.getStatus() == AccountStatus.CLOSED) {
             throw new BusinessException("Account is already closed")
-                    .addDetail("iban", iban);
+                    .addDetail("iban", account.getIban());
         }
 
         if (account.getBalance().compareTo(BigDecimal.ZERO) > 0) {
             throw new BusinessException("You cannot close an account with a positive balance.")
-                    .addDetail("iban", iban);
+                    .addDetail("iban", account.getIban());
         }
 
         account.setStatus(AccountStatus.CLOSED);
         accountRepository.save(account);
 
-        return new TransactionResponseDto(
+        return new OperationResponseDto(
                 "Account is closed",
                 LocalDateTime.now(),
                 HttpStatus.OK
@@ -100,20 +90,16 @@ public class AccountService {
 
     @Transactional
     @CacheEvict(value = "users", allEntries = true)
-    public TransactionResponseDto openAccount(String iban) {
-        Account account = accountRepository.findByIban(iban)
-                .orElseThrow(() -> new NotFoundException(ACCOUNT_NOT_FOUND)
-                        .addDetail("iban", iban));
-
+    public OperationResponseDto openAccount(Account account) {
         if (account.getStatus() != AccountStatus.CLOSED) {
             throw new BusinessException("Account is already open or in an invalid state")
-                    .addDetail("iban", iban);
+                    .addDetail("iban", account.getIban());
         }
 
         account.setStatus(AccountStatus.ACTIVE);
         accountRepository.save(account);
 
-        return new TransactionResponseDto(
+        return new OperationResponseDto(
                 "Account is opened",
                 LocalDateTime.now(),
                 HttpStatus.OK
@@ -122,7 +108,8 @@ public class AccountService {
 
     @Transactional
     @CacheEvict(value = "users", allEntries = true)
-    public TransactionResponseDto deleteAccount(String iban) {
+    @PreAuthorize("hasRole('ADMIN')")
+    public OperationResponseDto deleteAccount(String iban) {
         Account account = accountRepository.findByIban(iban)
                 .orElseThrow(() -> new NotFoundException(ACCOUNT_NOT_FOUND)
                         .addDetail("iban", iban));
@@ -134,100 +121,10 @@ public class AccountService {
 
         accountRepository.delete(account);
 
-        return new TransactionResponseDto(
+        return new OperationResponseDto(
                 "Account " + iban + " is deleted",
                 LocalDateTime.now(),
                 HttpStatus.OK
                 );
-    }
-
-    @Transactional
-    @CacheEvict(value = "users", allEntries = true)
-    public TransactionResponseDto processTransaction(BaseTransactionDto transaction) {
-        transactionValidator.validateTransaction(transaction);
-
-        return switch (transaction.getTransactionType()) {
-            case DEPOSIT -> {
-                SingleAccountTransactionDto depositRequest = (SingleAccountTransactionDto) transaction;
-                yield deposit(depositRequest.getIban(), depositRequest.getAmount());
-            }
-            case WITHDRAWAL -> {
-                SingleAccountTransactionDto withdrawalRequest = (SingleAccountTransactionDto) transaction;
-                yield withdraw(withdrawalRequest.getIban(), withdrawalRequest.getAmount());
-            }
-            case TRANSFER -> {
-                TransferTransactionDto transfer = (TransferTransactionDto) transaction;
-                yield transfer(transfer.getFromIban(), transfer.getToIban(), transfer.getAmount());
-            }
-        };
-    }
-
-    @Transactional
-    public TransactionResponseDto deposit(String iban, BigDecimal amount) {
-        Account account = accountRepository.findByIban(iban)
-                .orElseThrow(() -> new NotFoundException(ACCOUNT_NOT_FOUND)
-                        .addDetail("iban", iban));
-
-        account.setBalance(account.getBalance().add(amount));
-        accountRepository.save(account);
-
-        return new TransactionResponseDto(
-                "Deposit success: +" + amount + " " + account.getCurrency(),
-                        LocalDateTime.now(),
-                        HttpStatus.OK
-                );
-    }
-
-    @Transactional
-    public TransactionResponseDto withdraw(String iban, BigDecimal amount) {
-        Account account = accountRepository.findByIban(iban)
-                .orElseThrow(() -> new NotFoundException(ACCOUNT_NOT_FOUND)
-                        .addDetail("iban", iban));
-
-        if (amount.compareTo(BigDecimal.ZERO) <= 0 || account.getBalance().compareTo(amount) < 0) {
-            throw new BusinessException("Insufficient funds for withdraw")
-                    .addDetail("iban", iban)
-                    .addDetail("amount", amount)
-                    .addDetail("account", account.getBalance());
-        }
-
-        account.setBalance(account.getBalance().subtract(amount));
-        accountRepository.save(account);
-
-        return new TransactionResponseDto(
-                "Withdrawal success: -" + amount + " " + account.getCurrency(),
-                LocalDateTime.now(),
-                HttpStatus.OK
-        );
-    }
-
-    @Transactional
-    public TransactionResponseDto transfer(String fromIban, String toIban, BigDecimal amount) {
-        Account fromAccount = accountRepository.findByIban(fromIban)
-                .orElseThrow(() -> new NotFoundException("Sender account not found")
-                        .addDetail("fromIban", fromIban));
-
-        Account toAccount = accountRepository.findByIban(toIban)
-                .orElseThrow(() -> new NotFoundException("Receiver account not found")
-                        .addDetail("toIban", toIban));
-
-        if (amount.compareTo(BigDecimal.ZERO) <= 0 || fromAccount.getBalance().compareTo(amount) < 0) {
-            throw new BusinessException("Insufficient funds for transfer")
-                    .addDetail("fromIban", fromIban)
-                    .addDetail("balance", fromAccount.getBalance())
-                    .addDetail("amount", amount);
-        }
-
-        fromAccount.setBalance(fromAccount.getBalance().subtract(amount));
-        toAccount.setBalance(toAccount.getBalance().add(amount));
-
-        accountRepository.save(fromAccount);
-        accountRepository.save(toAccount);
-
-        return new TransactionResponseDto(
-                "Transfer " + amount + " " + fromAccount.getCurrency() +
-                " from " + fromIban + " to " + toIban,
-                LocalDateTime.now(),
-                HttpStatus.OK);
     }
 }

@@ -1,8 +1,8 @@
 package by.onlinebanking.validation;
 
-import by.onlinebanking.dto.BaseTransactionDto;
-import by.onlinebanking.dto.SingleAccountTransactionDto;
-import by.onlinebanking.dto.TransferTransactionDto;
+import by.onlinebanking.dto.transaction.BaseTransactionDto;
+import by.onlinebanking.dto.transaction.SingleAccountTransactionDto;
+import by.onlinebanking.dto.transaction.TransferTransactionDto;
 import by.onlinebanking.exception.ValidationException;
 import by.onlinebanking.model.Account;
 import by.onlinebanking.model.enums.AccountStatus;

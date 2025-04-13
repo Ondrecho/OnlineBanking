@@ -1,4 +1,4 @@
-package by.onlinebanking.dto;
+package by.onlinebanking.dto.transaction;
 
 import by.onlinebanking.validation.annotations.IbanFormat;
 import jakarta.validation.constraints.NotBlank;

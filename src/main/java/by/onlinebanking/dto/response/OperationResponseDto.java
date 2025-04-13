@@ -1,4 +1,4 @@
-package by.onlinebanking.dto;
+package by.onlinebanking.dto.response;
 
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
@@ -11,7 +11,7 @@ import org.springframework.http.HttpStatus;
 @Setter
 @AllArgsConstructor
 @ToString
-public class TransactionResponseDto {
+public class OperationResponseDto {
     private String message;
     private LocalDateTime timeStamp;
     private HttpStatus status;

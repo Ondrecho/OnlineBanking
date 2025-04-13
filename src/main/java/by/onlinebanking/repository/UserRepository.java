@@ -35,4 +35,7 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
 
     @Query("SELECT u.email FROM User u WHERE u.email IN :emails")
     List<String> findExistingEmails(@Param("emails") List<String> emails);
+
+    @Query("SELECT u FROM User u LEFT JOIN FETCH u.roles WHERE u.email = :email")
+    Optional<User> findByEmailWithRoles(@Param("email") String email);
 }

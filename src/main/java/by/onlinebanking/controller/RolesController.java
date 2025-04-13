@@ -1,6 +1,6 @@
 package by.onlinebanking.controller;
 
-import by.onlinebanking.dto.RoleDto;
+import by.onlinebanking.dto.role.RoleDto;
 import by.onlinebanking.service.RoleService;
 import jakarta.validation.Valid;
 import java.util.List;

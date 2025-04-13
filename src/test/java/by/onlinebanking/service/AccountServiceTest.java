@@ -1,6 +1,9 @@
 package by.onlinebanking.service;
 
-import by.onlinebanking.dto.*;
+import by.onlinebanking.dto.account.AccountDto;
+import by.onlinebanking.dto.transaction.SingleAccountTransactionDto;
+import by.onlinebanking.dto.response.OperationResponseDto;
+import by.onlinebanking.dto.transaction.TransferTransactionDto;
 import by.onlinebanking.exception.BusinessException;
 import by.onlinebanking.exception.NotFoundException;
 import by.onlinebanking.model.Account;
@@ -39,6 +42,9 @@ class AccountServiceTest {
 
     @InjectMocks
     private AccountService accountService;
+
+    @InjectMocks
+    private TransactionService transactionService;
 
     private User testUser;
     private Account testAccount;
@@ -103,33 +109,19 @@ class AccountServiceTest {
     @Test
     void closeAccount_ClosesSuccessfully() {
         testAccount.setBalance(BigDecimal.ZERO);
-        when(accountRepository.findByIban("TESTIBAN123")).thenReturn(Optional.of(testAccount));
 
-        TransactionResponseDto response = accountService.closeAccount("TESTIBAN123");
+        OperationResponseDto response = accountService.closeAccount(testAccount);
 
         assertEquals(AccountStatus.CLOSED, testAccount.getStatus());
         assertEquals("Account is closed", response.getMessage());
     }
 
     @Test
-    void closeAccount_AccountNotFound_ThrowsNotFoundException() {
-        when(accountRepository.findByIban("NONEXISTENT_IBAN")).thenReturn(Optional.empty());
-
-        NotFoundException exception = assertThrows(NotFoundException.class,
-                () -> accountService.closeAccount("NONEXISTENT_IBAN"));
-
-        assertEquals("Account not found", exception.getMessage());
-        assertEquals("NONEXISTENT_IBAN", exception.getDetails().get("iban"));
-        verify(accountRepository, never()).save(any());
-    }
-
-    @Test
     void closeAccount_AlreadyClosed_ThrowsException() {
         testAccount.setStatus(AccountStatus.CLOSED);
-        when(accountRepository.findByIban("TESTIBAN123")).thenReturn(Optional.of(testAccount));
 
         BusinessException exception = assertThrows(BusinessException.class,
-                () -> accountService.closeAccount("TESTIBAN123"));
+                () -> accountService.closeAccount(testAccount));
 
         assertEquals("Account is already closed", exception.getMessage());
     }
@@ -137,10 +129,9 @@ class AccountServiceTest {
     @Test
     void closeAccount_PositiveBalance_ThrowsException() {
         testAccount.setBalance(BigDecimal.valueOf(100));
-        when(accountRepository.findByIban("TESTIBAN123")).thenReturn(Optional.of(testAccount));
 
         BusinessException exception = assertThrows(BusinessException.class,
-                () -> accountService.closeAccount("TESTIBAN123"));
+                () -> accountService.closeAccount(testAccount));
 
         assertEquals("You cannot close an account with a positive balance.", exception.getMessage());
     }
@@ -148,9 +139,8 @@ class AccountServiceTest {
     @Test
     void openAccount_OpensSuccessfully() {
         testAccount.setStatus(AccountStatus.CLOSED);
-        when(accountRepository.findByIban("TESTIBAN123")).thenReturn(Optional.of(testAccount));
 
-        TransactionResponseDto response = accountService.openAccount("TESTIBAN123");
+        OperationResponseDto response = accountService.openAccount(testAccount);
 
         assertEquals(AccountStatus.ACTIVE, testAccount.getStatus());
         assertEquals("Account is opened", response.getMessage());
@@ -158,10 +148,8 @@ class AccountServiceTest {
 
     @Test
     void openAccount_AlreadyOpen_ThrowsException() {
-        when(accountRepository.findByIban("TESTIBAN123")).thenReturn(Optional.of(testAccount));
-
         BusinessException exception = assertThrows(BusinessException.class,
-                () -> accountService.openAccount("TESTIBAN123"));
+                () -> accountService.openAccount(testAccount));
 
         assertEquals("Account is already open or in an invalid state", exception.getMessage());
     }
@@ -171,7 +159,7 @@ class AccountServiceTest {
         testAccount.setStatus(AccountStatus.CLOSED);
         when(accountRepository.findByIban("TESTIBAN123")).thenReturn(Optional.of(testAccount));
 
-        TransactionResponseDto response = accountService.deleteAccount("TESTIBAN123");
+        OperationResponseDto response = accountService.deleteAccount("TESTIBAN123");
 
         verify(accountRepository).delete(testAccount);
         assertEquals("Account TESTIBAN123 is deleted", response.getMessage());
@@ -196,7 +184,7 @@ class AccountServiceTest {
 
         when(accountRepository.findByIban("TESTIBAN123")).thenReturn(Optional.of(testAccount));
 
-        TransactionResponseDto response = accountService.processTransaction(deposit);
+        OperationResponseDto response = transactionService.processTransaction(deposit);
 
         assertEquals("Deposit success: +100 USD", response.getMessage());
         assertEquals(HttpStatus.OK, response.getStatus());
@@ -206,7 +194,7 @@ class AccountServiceTest {
     void deposit_IncreasesBalance() {
         when(accountRepository.findByIban("TESTIBAN123")).thenReturn(Optional.of(testAccount));
 
-        TransactionResponseDto response = accountService.deposit("TESTIBAN123", BigDecimal.valueOf(100));
+        OperationResponseDto response = transactionService.deposit("TESTIBAN123", BigDecimal.valueOf(100));
 
         assertEquals(BigDecimal.valueOf(1100), testAccount.getBalance());
         assertEquals("Deposit success: +100 USD", response.getMessage());
@@ -216,7 +204,7 @@ class AccountServiceTest {
     void withdraw_DecreasesBalance() {
         when(accountRepository.findByIban("TESTIBAN123")).thenReturn(Optional.of(testAccount));
 
-        TransactionResponseDto response = accountService.withdraw("TESTIBAN123", BigDecimal.valueOf(100));
+        OperationResponseDto response = transactionService.withdraw("TESTIBAN123", BigDecimal.valueOf(100));
 
         assertEquals(BigDecimal.valueOf(900), testAccount.getBalance());
         assertEquals("Withdrawal success: -100 USD", response.getMessage());
@@ -228,7 +216,7 @@ class AccountServiceTest {
 
         BigDecimal value = BigDecimal.valueOf(2000);
         BusinessException exception = assertThrows(BusinessException.class,
-                () -> accountService.withdraw("TESTIBAN123", value));
+                () -> transactionService.withdraw("TESTIBAN123", value));
 
         assertEquals("Insufficient funds for withdraw", exception.getMessage());
     }
@@ -243,7 +231,7 @@ class AccountServiceTest {
         when(accountRepository.findByIban("TESTIBAN123")).thenReturn(Optional.of(testAccount));
         when(accountRepository.findByIban("TOIBAN123")).thenReturn(Optional.of(toAccount));
 
-        TransactionResponseDto response = accountService.transfer("TESTIBAN123", "TOIBAN123", BigDecimal.valueOf(500));
+        OperationResponseDto response = transactionService.transfer("TESTIBAN123", "TOIBAN123", BigDecimal.valueOf(500));
 
         assertEquals(BigDecimal.valueOf(500), testAccount.getBalance());
         assertEquals(BigDecimal.valueOf(500), toAccount.getBalance());
@@ -251,7 +239,6 @@ class AccountServiceTest {
     }
     @Test
     void processTransaction_Withdrawal_ProcessesSuccessfully() {
-        // Подготовка
         SingleAccountTransactionDto withdrawal = new SingleAccountTransactionDto();
         withdrawal.setTransactionType(TransactionType.WITHDRAWAL);
         withdrawal.setIban("TESTIBAN123");
@@ -260,10 +247,8 @@ class AccountServiceTest {
         when(accountRepository.findByIban("TESTIBAN123")).thenReturn(Optional.of(testAccount));
         doNothing().when(transactionValidator).validateTransaction(withdrawal);
 
-        // Выполнение
-        TransactionResponseDto response = accountService.processTransaction(withdrawal);
+        OperationResponseDto response = transactionService.processTransaction(withdrawal);
 
-        // Проверки
         assertEquals("Withdrawal success: -100 USD", response.getMessage());
         assertEquals(HttpStatus.OK, response.getStatus());
         verify(accountRepository).save(testAccount);
@@ -271,7 +256,6 @@ class AccountServiceTest {
 
     @Test
     void processTransaction_Transfer_ProcessesSuccessfully() {
-        // Подготовка
         Account toAccount = new Account();
         toAccount.setIban("TOIBAN123");
         toAccount.setBalance(BigDecimal.ZERO);
@@ -287,10 +271,8 @@ class AccountServiceTest {
         when(accountRepository.findByIban("TOIBAN123")).thenReturn(Optional.of(toAccount));
         doNothing().when(transactionValidator).validateTransaction(transfer);
 
-        // Выполнение
-        TransactionResponseDto response = accountService.processTransaction(transfer);
+        OperationResponseDto response = transactionService.processTransaction(transfer);
 
-        // Проверки
         assertEquals("Transfer 500 USD from TESTIBAN123 to TOIBAN123", response.getMessage());
         assertEquals(HttpStatus.OK, response.getStatus());
         verify(accountRepository, times(2)).save(any(Account.class));
@@ -307,7 +289,7 @@ class AccountServiceTest {
         BigDecimal value = BigDecimal.valueOf(2000);
 
         BusinessException exception = assertThrows(BusinessException.class,
-                () -> accountService.transfer("TESTIBAN123", "TOIBAN123",value));
+                () -> transactionService.transfer("TESTIBAN123", "TOIBAN123",value));
 
         assertEquals("Insufficient funds for transfer", exception.getMessage());
     }

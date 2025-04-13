@@ -1,23 +1,20 @@
-package by.onlinebanking.dto;
+package by.onlinebanking.security.dto.request;
 
-import jakarta.validation.Valid;
+import by.onlinebanking.dto.user.UserBaseDto;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PastOrPresent;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
-import java.util.Set;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 
 @Getter
 @Setter
-@ToString
-public class CreateUserDto implements UserBaseDto {
+public class RegisterRequest implements UserBaseDto {
     @NotBlank(message = "Full name is required")
     @Size(min = 2, max = 100, message = "Full name must be between 2 and 100 characters")
     @Pattern(regexp = "^[a-zA-Z\\s]+$",
@@ -39,11 +36,4 @@ public class CreateUserDto implements UserBaseDto {
     )
     @ToString.Exclude
     private String password;
-
-    @NotEmpty(message = "At least one role is required")
-    private Set<@Valid RoleDto> roles;
-
-    public CreateUserDto() {
-        // for JSON serialization
-    }
 }

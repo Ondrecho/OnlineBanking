@@ -26,21 +26,36 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/users")
-@Validated
-public class UsersController {
+@RequestMapping("/api/admin/users")
+public class AdminUsersController {
     private final UserService userService;
     private final AccountService accountService;
 
     @Autowired
-    public UsersController(UserService userService,
-                           AccountService accountService) {
+    public AdminUsersController(UserService userService,
+                               AccountService accountService) {
         this.userService = userService;
         this.accountService = accountService;
+    }
+
+    @PostMapping
+    public ResponseEntity<UserResponseDto> createUserAsAdmin(@Valid @RequestBody CreateUserDto userDto) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(userService.createUser(userDto));
+    }
+
+    @PostMapping("/bulk")
+    public ResponseEntity<List<UserResponseDto>> createUsersBulk(
+            @Validated @RequestBody List<@Valid CreateUserDto> userDtos) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(userService.createUsersBulk(userDtos));
+    }
+
+    @PostMapping("/{userId}/accounts")
+    public ResponseEntity<AccountDto> createAccount(@PathVariable Long userId,
+                                                    @NotNull @RequestParam Currency currency) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(accountService.createAccount(userId, currency));
     }
 
     @GetMapping
@@ -74,24 +89,12 @@ public class UsersController {
         return ResponseEntity.ok(accountService.getAccountsByUserId(userId));
     }
 
-    @PostMapping("/{userId}/accounts")
-    public ResponseEntity<AccountDto> createAccount(@PathVariable Long userId,
-                                                    @NotNull @RequestParam Currency currency) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(accountService.createAccount(userId, currency));
-    }
-
-    @PostMapping
-    public ResponseEntity<UserResponseDto> createUser(@Valid @RequestBody CreateUserDto userDto) {
-        UserResponseDto createdUserDto = userService.createUser(userDto);
-        return ResponseEntity.status(201).body(createdUserDto);
-    }
-
-    @PostMapping("/bulk")
-    @ResponseStatus(HttpStatus.CREATED)
-    public ResponseEntity<List<UserResponseDto>> createUsersBulk(
-            @Validated @RequestBody List<@Valid CreateUserDto> userDtos) {
-        List<UserResponseDto> createdUsers = userService.createUsersBulk(userDtos);
-        return ResponseEntity.status(HttpStatus.CREATED).body(createdUsers);
+    @PatchMapping("/{userId}")
+    public ResponseEntity<UserResponseDto> partialUpdateUser(
+            @PathVariable Long userId,
+            @Validated(OnPatch.class) @RequestBody UpdateUserDto userDto
+    ) {
+        return ResponseEntity.ok(userService.partialUpdateUser(userId, userDto));
     }
 
     @PutMapping("/{userId}")
@@ -99,21 +102,11 @@ public class UsersController {
             @PathVariable Long userId,
             @Validated(OnUpdate.class) @RequestBody UpdateUserDto userDto
     ) {
-        UserResponseDto updatedUserDto = userService.fullUpdateUser(userId, userDto);
-        return ResponseEntity.ok(updatedUserDto);
-    }
-
-    @PatchMapping("/{userId}")
-    public ResponseEntity<UserResponseDto> partialUpdateUser(
-            @PathVariable Long userId,
-            @Validated(OnPatch.class) @RequestBody UpdateUserDto userDto
-    ) {
-        UserResponseDto updatedUserDto = userService.partialUpdateUser(userId, userDto);
-        return ResponseEntity.ok(updatedUserDto);
+        return ResponseEntity.ok(userService.fullUpdateUser(userId, userDto));
     }
 
     @DeleteMapping("/{userId}")
-    public ResponseEntity<String> deleteUser(@PathVariable Long userId) {
+    public ResponseEntity<String> deleteUserAsAdmin(@PathVariable Long userId) {
         userService.deleteUser(userId);
         return ResponseEntity.noContent().build();
     }

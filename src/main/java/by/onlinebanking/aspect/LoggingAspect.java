@@ -10,20 +10,21 @@ import org.springframework.stereotype.Component;
 @Aspect
 @Component
 public class LoggingAspect {
-    private final Logger logger = LoggerFactory.getLogger(this.getClass());
+    private static final Logger LOGGER = LoggerFactory.getLogger(LoggingAspect.class);
 
     @Around("(execution(* by.onlinebanking.controller..*(..)) || " +
-            "execution(* by.onlinebanking.service..*(..))) && " +
+            "execution(* by.onlinebanking.service..*(..)) ||" +
+            " execution(* by.onlinebanking.security.service..*(..))) && " +
             "!within(by.onlinebanking.service.LogsService)")
     public Object logMethodExecution(ProceedingJoinPoint joinPoint) throws Throwable {
         String methodName = joinPoint.getSignature().toShortString();
-        logger.info("Method invocation: {} | Arguments: {}", methodName, joinPoint.getArgs());
+        LOGGER.info("Method invocation: {} | Arguments: {}", methodName, joinPoint.getArgs());
 
         long startTime = System.currentTimeMillis();
         Object result = joinPoint.proceed();
         long elapsedTime = System.currentTimeMillis() - startTime;
 
-        logger.info("Method {} completed in {} ms | Result: {}", methodName, elapsedTime, result);
+        LOGGER.info("Method {} completed in {} ms | Result: {}", methodName, elapsedTime, result);
         return result;
     }
 }

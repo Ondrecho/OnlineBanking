@@ -2,7 +2,9 @@ package by.onlinebanking.exception;
 
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -18,7 +20,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
-    private static final String VALIDATIONERROR = "VALIDATION_ERROR";
+    private static final String VALIDATION_ERROR = "VALIDATION_ERROR";
     private static final String FIELD = "field";
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -32,7 +34,7 @@ public class GlobalExceptionHandler {
         });
 
         ErrorResponse response = new ErrorResponse(
-                VALIDATIONERROR,
+                VALIDATION_ERROR,
                 "Validation failed",
                 errors
         );
@@ -66,7 +68,7 @@ public class GlobalExceptionHandler {
                 .toList();
 
         return ResponseEntity.badRequest().body(
-                new ErrorResponse(VALIDATIONERROR, "Validation failed", Map.of("errors", errors))
+                new ErrorResponse(VALIDATION_ERROR, "Validation failed", Map.of("errors", errors))
         );
     }
 
@@ -145,11 +147,31 @@ public class GlobalExceptionHandler {
         String message = "Invalid request: Unknown field '" + unknownField + "'";
 
         ErrorResponse response = new ErrorResponse(
-                VALIDATIONERROR,
+                VALIDATION_ERROR,
                 message,
                 Map.of("unknownFields", Collections.singletonList(unknownField))
         );
 
         return ResponseEntity.badRequest().body(response);
+    }
+
+    @ExceptionHandler({
+            org.springframework.security.access.AccessDeniedException.class
+    })
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public ResponseEntity<ErrorResponse> handleAccessDeniedExceptions(
+            Exception ex,
+            HttpServletRequest request) {
+        Map<String, Object> details = new HashMap<>();
+        details.put("path", request.getRequestURI());
+        details.put("timestamp", LocalDateTime.now());
+
+        ErrorResponse response = new ErrorResponse(
+                "ACCESS_DENIED",
+                ex.getMessage(),
+                details
+        );
+
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
     }
 }

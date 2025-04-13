@@ -1,6 +1,6 @@
 package by.onlinebanking.service;
 
-import by.onlinebanking.dto.RoleDto;
+import by.onlinebanking.dto.role.RoleDto;
 import by.onlinebanking.exception.BusinessException;
 import by.onlinebanking.exception.NotFoundException;
 import by.onlinebanking.model.Role;

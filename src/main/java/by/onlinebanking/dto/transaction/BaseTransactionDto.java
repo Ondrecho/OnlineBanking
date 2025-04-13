@@ -1,4 +1,4 @@
-package by.onlinebanking.dto;
+package by.onlinebanking.dto.transaction;
 
 import by.onlinebanking.model.enums.Currency;
 import by.onlinebanking.model.enums.TransactionType;

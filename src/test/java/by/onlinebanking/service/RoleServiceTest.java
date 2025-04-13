@@ -1,6 +1,6 @@
 package by.onlinebanking.service;
 
-import by.onlinebanking.dto.RoleDto;
+import by.onlinebanking.dto.role.RoleDto;
 import by.onlinebanking.exception.BusinessException;
 import by.onlinebanking.exception.NotFoundException;
 import by.onlinebanking.model.Role;
@@ -32,7 +32,6 @@ class RoleServiceTest {
 
     @Test
     void createRole_Success() {
-        // Arrange
         String roleName = "ADMIN";
         when(roleRepository.existsByName(roleName)).thenReturn(false);
 
@@ -41,10 +40,8 @@ class RoleServiceTest {
         savedRole.setName(roleName);
         when(roleRepository.save(any(Role.class))).thenReturn(savedRole);
 
-        // Act
         RoleDto result = roleService.createRole(roleName);
 
-        // Assert
         assertNotNull(result);
         assertEquals(roleName, result.getName());
         verify(roleRepository).existsByName(roleName);
@@ -53,11 +50,9 @@ class RoleServiceTest {
 
     @Test
     void createRole_WhenRoleExists_ThrowsBusinessException() {
-        // Arrange
         String roleName = "ADMIN";
         when(roleRepository.existsByName(roleName)).thenReturn(true);
 
-        // Act & Assert
         BusinessException exception = assertThrows(BusinessException.class,
                 () -> roleService.createRole(roleName));
 
@@ -69,7 +64,6 @@ class RoleServiceTest {
 
     @Test
     void getAllRoles_Success() {
-        // Arrange
         Role role1 = new Role();
         role1.setId(1L);
         role1.setName("ADMIN");
@@ -80,10 +74,8 @@ class RoleServiceTest {
 
         when(roleRepository.findAll()).thenReturn(List.of(role1, role2));
 
-        // Act
         List<RoleDto> result = roleService.getAllRoles();
 
-        // Assert
         assertNotNull(result);
         assertEquals(2, result.size());
         assertEquals("ADMIN", result.get(0).getName());
@@ -93,7 +85,6 @@ class RoleServiceTest {
 
     @Test
     void updateRole_Success() {
-        // Arrange
         Long roleId = 1L;
         String newRoleName = "MODERATOR";
 
@@ -112,10 +103,8 @@ class RoleServiceTest {
         updatedRole.setName(newRoleName);
         when(roleRepository.save(existingRole)).thenReturn(updatedRole);
 
-        // Act
         RoleDto result = roleService.updateRole(roleId, updateDto);
 
-        // Assert
         assertNotNull(result);
         assertEquals(newRoleName, result.getName());
         verify(roleRepository).findById(roleId);
@@ -125,14 +114,12 @@ class RoleServiceTest {
 
     @Test
     void updateRole_WhenRoleNotFound_ThrowsNotFoundException() {
-        // Arrange
         Long roleId = 1L;
         RoleDto updateDto = new RoleDto();
         updateDto.setName("MODERATOR");
 
         when(roleRepository.findById(roleId)).thenReturn(Optional.empty());
 
-        // Act & Assert
         NotFoundException exception = assertThrows(NotFoundException.class,
                 () -> roleService.updateRole(roleId, updateDto));
 
@@ -145,7 +132,6 @@ class RoleServiceTest {
 
     @Test
     void updateRole_WhenRoleNameExists_ThrowsBusinessException() {
-        // Arrange
         Long roleId = 1L;
         String newRoleName = "MODERATOR";
 
@@ -159,7 +145,6 @@ class RoleServiceTest {
         when(roleRepository.findById(roleId)).thenReturn(Optional.of(existingRole));
         when(roleRepository.existsByNameAndIdNot(newRoleName, roleId)).thenReturn(true);
 
-        // Act & Assert
         BusinessException exception = assertThrows(BusinessException.class,
                 () -> roleService.updateRole(roleId, updateDto));
 
@@ -172,7 +157,6 @@ class RoleServiceTest {
 
     @Test
     void deleteRole_Success() {
-        // Arrange
         Long roleId = 1L;
         Role role = new Role();
         role.setId(roleId);
@@ -181,10 +165,8 @@ class RoleServiceTest {
         when(roleRepository.findById(roleId)).thenReturn(Optional.of(role));
         when(userRepository.existsByRolesId(roleId)).thenReturn(false);
 
-        // Act
         roleService.deleteRole(roleId);
 
-        // Assert
         verify(roleRepository).findById(roleId);
         verify(userRepository).existsByRolesId(roleId);
         verify(roleRepository).delete(role);
@@ -192,11 +174,9 @@ class RoleServiceTest {
 
     @Test
     void deleteRole_WhenRoleNotFound_ThrowsNotFoundException() {
-        // Arrange
         Long roleId = 1L;
         when(roleRepository.findById(roleId)).thenReturn(Optional.empty());
 
-        // Act & Assert
         NotFoundException exception = assertThrows(NotFoundException.class,
                 () -> roleService.deleteRole(roleId));
 
@@ -209,7 +189,6 @@ class RoleServiceTest {
 
     @Test
     void deleteRole_WhenUsersAssigned_ThrowsBusinessException() {
-        // Arrange
         Long roleId = 1L;
         Role role = new Role();
         role.setId(roleId);
@@ -220,7 +199,6 @@ class RoleServiceTest {
         long usersCount = 5L;
         when(userRepository.countByRolesId(roleId)).thenReturn(usersCount);
 
-        // Act & Assert
         BusinessException exception = assertThrows(BusinessException.class,
                 () -> roleService.deleteRole(roleId));
 

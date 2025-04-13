@@ -18,13 +18,11 @@ class LogsServiceTest {
     @TempDir
     Path tempDir;
 
-    // Тест для getLogsForDate (основной сценарий)
     @Test
     void getLogsForDate_ReturnsFilteredLogs() throws Exception {
         LogsService service = new LogsService();
         LocalDate date = LocalDate.of(2023, 1, 1);
 
-        // Настройка временных файлов
         Path logFile = tempDir.resolve("application.2023-01-01.1.log");
         Files.write(logFile, List.of(
                 "2023-01-01 10:00:00 - Valid log",
@@ -39,20 +37,17 @@ class LogsServiceTest {
         assertTrue(result.get(0).contains("Valid log"));
     }
 
-    // Тест для обработки IOException в getLogsForDate
     @Test
     void getLogsForDate_WhenIOException_ReturnsEmptyList() throws Exception {
         LogsService service = new LogsService();
         LocalDate date = LocalDate.of(2023, 1, 1);
 
-        // Настраиваем несуществующий путь
         setPrivateField(service, "logFilePath", "/nonexistent/path.log");
 
         List<String> result = service.getLogsForDate(date);
         assertTrue(result.isEmpty());
     }
 
-    // Тест для parseDate с невалидной датой
     @Test
     void parseDate_InvalidDate_ThrowsException() {
         LogsService service = new LogsService();
@@ -71,7 +66,6 @@ class LogsServiceTest {
         assertEquals("Invalid date format", exception.getMessage());
     }
 
-    // Тест для validateDateNotInFuture с будущей датой
     @Test
     void validateDateNotInFuture_FutureDate_ThrowsException() {
         LogsService service = new LogsService();
@@ -82,7 +76,6 @@ class LogsServiceTest {
         assertEquals("Date cannot be in the future", exception.getMessage());
     }
 
-    // Тест для getLogFilesForDate с текущим файлом
     @Test
     void getLogFilesForDate_IncludesCurrentFileWhenExists() throws Exception {
         LogsService service = new LogsService();
@@ -100,7 +93,6 @@ class LogsServiceTest {
         assertTrue(result.contains(currentFile));
     }
 
-    // Тест для getLogFilesForDate без текущего файла
     @Test
     void getLogFilesForDate_ExcludesCurrentFileWhenNotExists() throws Exception {
         LogsService service = new LogsService();
@@ -136,7 +128,6 @@ class LogsServiceTest {
         }
     }
 
-    // Тест для isLineDateMatch с различными сценариями
     @Test
     void isLineDateMatch_VariousScenarios() throws Exception {
         LogsService service = new LogsService();
@@ -158,7 +149,6 @@ class LogsServiceTest {
                 "Short", date));
     }
 
-    // Тест для compareLogFiles
     @Test
     void compareLogFiles_ComparesCorrectly() throws Exception {
         LogsService service = new LogsService();
@@ -173,10 +163,9 @@ class LogsServiceTest {
                 new Class[]{Path.class, Path.class},
                 p1, p2);
 
-        assertTrue(result < 0); // 1 < 2
+        assertTrue(result < 0);
     }
 
-    // Тест для extractFileIndex
     @Test
     void extractFileIndex_ExtractsCorrectly() throws Exception {
         LogsService service = new LogsService();
@@ -194,8 +183,6 @@ class LogsServiceTest {
         assertEquals(0, index2);
     }
 
-
-    // Вспомогательный метод для вызова приватных методов
     private <T> T invokePrivateMethod(Object target, String methodName,
                                       Class<?>[] paramTypes, Object... args)
             throws Exception {
@@ -204,7 +191,6 @@ class LogsServiceTest {
         return (T) method.invoke(target, args);
     }
 
-    // Вспомогательный метод для установки приватных полей
     private void setPrivateField(Object target, String fieldName, Object value)
             throws Exception {
         Field field = target.getClass().getDeclaredField(fieldName);

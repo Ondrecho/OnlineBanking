@@ -1,6 +1,8 @@
 package by.onlinebanking.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -27,8 +29,14 @@ public class User {
     private Long id;
 
     private String fullName;
+
+    @Column(nullable = false, unique = true)
     private String email;
+
     private LocalDate dateOfBirth;
+
+    @Column(nullable = false)
+    @JsonIgnore
     private String password;
 
     @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE},

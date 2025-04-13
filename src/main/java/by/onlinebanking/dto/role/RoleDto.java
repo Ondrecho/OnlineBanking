@@ -1,4 +1,4 @@
-package by.onlinebanking.dto;
+package by.onlinebanking.dto.role;
 
 import by.onlinebanking.model.Role;
 import jakarta.validation.constraints.NotBlank;
