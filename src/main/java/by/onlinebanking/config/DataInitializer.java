@@ -46,7 +46,7 @@ public class DataInitializer implements CommandLineRunner {
 
     private void initAdmin() {
         String adminEmail = env.getProperty("app.admin.email", "admin@bank.com");
-        String adminPassword = env.getProperty("app.admin.password", "admin");
+        String adminPassword = env.getProperty("app.admin.password", "admin777");
 
         if (!userRepository.existsByEmail(adminEmail)) {
             Role adminRole = roleRepository.findByName(ROLE_ADMIN)

@@ -16,19 +16,11 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class AuthService {
     private final UserService userService;
-    private final CustomUserDetailsService userDetailsService;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
 
-    public JwtResponse register(RegisterRequest request) {
-        UserResponseDto user = userService.registerUser(request);
-        UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
-        String token = jwtService.generateToken(userDetails);
-
-        boolean isAdmin = userDetails.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
-
-        return new JwtResponse(token, isAdmin);
+    public UserResponseDto register(RegisterRequest request) {
+        return userService.registerUser(request);
     }
 
     public JwtResponse login(LoginRequest request) {

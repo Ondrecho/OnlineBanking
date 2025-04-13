@@ -1,5 +1,6 @@
 package by.onlinebanking.controller;
 
+import by.onlinebanking.dto.response.UserResponseDto;
 import by.onlinebanking.security.dto.request.LoginRequest;
 import by.onlinebanking.security.dto.request.RegisterRequest;
 import by.onlinebanking.security.dto.response.JwtResponse;
@@ -19,7 +20,7 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/register")
-    public ResponseEntity<JwtResponse> register(@Valid @RequestBody RegisterRequest request) {
+    public ResponseEntity<UserResponseDto> register(@Valid @RequestBody RegisterRequest request) {
         return ResponseEntity.ok(authService.register(request));
     }
 
