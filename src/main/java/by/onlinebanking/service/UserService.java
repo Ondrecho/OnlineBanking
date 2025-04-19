@@ -85,14 +85,14 @@ public class UserService {
     }
 
     @Cacheable(value = "users")
-    public List<UserResponseDto> getUsers(String fullName, String roleName) {
+    public List<UserResponseDto> getUsers(String fullName, List<String> roleNames) {
         Specification<User> spec = Specification.where(null);
 
         if (fullName != null) {
             spec = spec.and(UserSpecifications.hasFullName(fullName));
         }
-        if (roleName != null) {
-            spec = spec.and(UserSpecifications.hasRole(roleName));
+        if (roleNames != null && !roleNames.isEmpty()) {
+            spec = spec.and(UserSpecifications.hasRoles(roleNames));
         }
 
         List<User> users = userRepository.findAll(spec);
@@ -100,7 +100,7 @@ public class UserService {
         if (users.isEmpty()) {
             throw new NotFoundException("No users found with the specified criteria")
                     .addDetail("fullName", fullName)
-                    .addDetail("roleName", roleName);
+                    .addDetail("roleNames", roleNames);
         }
 
         return users.stream()

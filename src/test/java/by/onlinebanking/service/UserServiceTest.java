@@ -117,7 +117,7 @@ class UserServiceTest {
         List<User> users = Collections.singletonList(testUser);
         when(userRepository.findAll(any(Specification.class))).thenReturn(users);
 
-        List<UserResponseDto> result = usersService.getUsers(null, "ROLE_USER");
+        List<UserResponseDto> result = usersService.getUsers(null, List.of("ROLE_USER"));
 
         assertFalse(result.isEmpty());
         assertEquals(1, result.size());

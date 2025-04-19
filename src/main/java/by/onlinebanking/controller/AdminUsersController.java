@@ -61,14 +61,14 @@ public class AdminUsersController {
     @GetMapping
     public ResponseEntity<List<UserResponseDto>> getUsers(
             @RequestParam(required = false) String fullName,
-            @RequestParam(required = false) String roleName
+            @RequestParam(required = false) List<String> roleNames
     ) {
-        List<UserResponseDto> users = userService.getUsers(fullName, roleName);
+        List<UserResponseDto> users = userService.getUsers(fullName, roleNames);
 
         if (users.isEmpty()) {
             throw new NotFoundException("No users found with the specified criteria")
                     .addDetail("fullName", fullName)
-                    .addDetail("roleName", roleName);
+                    .addDetail("roleNames", roleNames);
         }
 
         return ResponseEntity.ok(users);
