@@ -1,4 +1,4 @@
-package by.onlinebanking.logs.service;
+package by.onlinebanking.logging.service;
 
 import by.onlinebanking.exception.BusinessException;
 import by.onlinebanking.exception.NotFoundException;

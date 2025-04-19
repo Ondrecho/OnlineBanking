@@ -1,7 +1,7 @@
 package by.onlinebanking.service;
 
 import by.onlinebanking.exception.ValidationException;
-import by.onlinebanking.logs.service.LogsService;
+import by.onlinebanking.logging.service.LogsService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import java.lang.reflect.Field;

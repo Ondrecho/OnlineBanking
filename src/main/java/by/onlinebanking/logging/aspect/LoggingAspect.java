@@ -1,4 +1,4 @@
-package by.onlinebanking.aspect;
+package by.onlinebanking.logging.aspect;
 
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -15,7 +15,7 @@ public class LoggingAspect {
     @Around("(execution(* by.onlinebanking.controller..*(..)) || " +
             "execution(* by.onlinebanking.service..*(..)) ||" +
             " execution(* by.onlinebanking.security.service..*(..))) && " +
-            "!within(by.onlinebanking.logs.service.LogsService)")
+            "!within(by.onlinebanking.logging.service.LogsService)")
     public Object logMethodExecution(ProceedingJoinPoint joinPoint) throws Throwable {
         String methodName = joinPoint.getSignature().toShortString();
         LOGGER.info("Method invocation: {} | Arguments: {}", methodName, joinPoint.getArgs());

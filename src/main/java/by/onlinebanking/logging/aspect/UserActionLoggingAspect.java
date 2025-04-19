@@ -1,4 +1,4 @@
-package by.onlinebanking.aspect;
+package by.onlinebanking.logging.aspect;
 
 import java.util.List;
 import org.aspectj.lang.JoinPoint;

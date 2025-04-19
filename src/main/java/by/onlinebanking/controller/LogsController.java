@@ -2,7 +2,7 @@ package by.onlinebanking.controller;
 
 import by.onlinebanking.exception.BusinessException;
 import by.onlinebanking.exception.NotFoundException;
-import by.onlinebanking.logs.service.LogsService;
+import by.onlinebanking.logging.service.LogsService;
 import jakarta.validation.constraints.Pattern;
 import java.time.LocalDate;
 import java.util.Map;

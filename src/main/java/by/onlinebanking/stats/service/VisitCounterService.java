@@ -12,15 +12,15 @@ public class VisitCounterService {
         this.visitStats = visitStats;
     }
 
-    public synchronized void recordVisit(String url) {
+    public void recordVisit(String url) {
         visitStats.recordVisit(url);
     }
 
-    public synchronized long getVisitCount(String url) {
+    public long getVisitCount(String url) {
         return visitStats.getVisitCount(url);
     }
 
-    public synchronized Map<String, Long> getAllStats() {
+    public Map<String, Long> getAllStats() {
         return visitStats.getAllStats();
     }
 }

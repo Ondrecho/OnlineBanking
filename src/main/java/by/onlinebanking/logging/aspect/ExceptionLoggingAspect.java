@@ -1,4 +1,4 @@
-package by.onlinebanking.aspect;
+package by.onlinebanking.logging.aspect;
 
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.AfterThrowing;
