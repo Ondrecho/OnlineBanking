@@ -1,6 +1,5 @@
 package by.onlinebanking.security.service;
 
-import by.onlinebanking.dto.response.UserResponseDto;
 import by.onlinebanking.security.dto.request.LoginRequest;
 import by.onlinebanking.security.dto.request.RegisterRequest;
 import by.onlinebanking.security.dto.response.JwtResponse;
@@ -19,8 +18,8 @@ public class AuthService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
 
-    public UserResponseDto register(RegisterRequest request) {
-        return userService.registerUser(request);
+    public void register(RegisterRequest request) {
+        userService.registerUser(request);
     }
 
     public JwtResponse login(LoginRequest request) {

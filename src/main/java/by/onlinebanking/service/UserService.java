@@ -57,7 +57,7 @@ public class UserService {
 
     @Transactional
     @CacheEvict(value = "users", allEntries = true)
-    public UserResponseDto registerUser(RegisterRequest request) {
+    public void registerUser(RegisterRequest request) {
         checkEmail(request.getEmail());
 
         User user = new User();
@@ -71,7 +71,7 @@ public class UserService {
 
         user.getRoles().add(userRole);
 
-        return new UserResponseDto(userRepository.save(user));
+        userRepository.save(user);
     }
 
     public UserResponseDto getUserById(Long id) {
