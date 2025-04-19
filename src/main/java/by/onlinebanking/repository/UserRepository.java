@@ -4,6 +4,8 @@ import by.onlinebanking.model.User;
 import java.util.List;
 import java.util.Optional;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -16,7 +18,7 @@ import org.springframework.stereotype.Repository;
 public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificationExecutor<User> {
     @NotNull
     @EntityGraph(attributePaths = {"roles", "accounts"})
-    List<User> findAll(Specification<User> spec);
+    Page<User> findAll(Specification<User> spec, Pageable pageable);
 
     @NotNull
     @EntityGraph(attributePaths = {"roles", "accounts"})

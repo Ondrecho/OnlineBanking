@@ -24,6 +24,8 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -85,27 +87,25 @@ public class UserService {
     }
 
     @Cacheable(value = "users")
-    public List<UserResponseDto> getUsers(String fullName, List<String> roleNames) {
+    public Page<UserResponseDto> getUsers(String fullName, List<String> roleNames, Pageable pageable) {
+        Specification<User> spec = buildSpecification(fullName, roleNames);
+        Page<User> userPage = userRepository.findAll(spec, pageable);
+
+        return userPage.map(UserResponseDto::new);
+    }
+
+    private Specification<User> buildSpecification(String fullName, List<String> roleNames) {
         Specification<User> spec = Specification.where(null);
 
-        if (fullName != null) {
+        if (fullName != null && !fullName.isBlank()) {
             spec = spec.and(UserSpecifications.hasFullName(fullName));
         }
+
         if (roleNames != null && !roleNames.isEmpty()) {
             spec = spec.and(UserSpecifications.hasRoles(roleNames));
         }
 
-        List<User> users = userRepository.findAll(spec);
-
-        if (users.isEmpty()) {
-            throw new NotFoundException("No users found with the specified criteria")
-                    .addDetail("fullName", fullName)
-                    .addDetail("roleNames", roleNames);
-        }
-
-        return users.stream()
-                .map(UserResponseDto::new)
-                .toList();
+        return spec;
     }
 
     public UserResponseDto getUserByIban(String iban) {
