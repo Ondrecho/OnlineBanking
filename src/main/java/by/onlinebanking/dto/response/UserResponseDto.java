@@ -14,6 +14,7 @@ import lombok.ToString;
 @Setter
 @ToString
 public class UserResponseDto {
+    private boolean active;
     private Long id;
     private String fullName;
     private String email;
@@ -22,6 +23,7 @@ public class UserResponseDto {
     private Set<AccountDto> accounts;
 
     public UserResponseDto(User user) {
+        this.active = user.getActive();
         this.id = user.getId();
         this.fullName = user.getFullName();
         this.email = user.getEmail();

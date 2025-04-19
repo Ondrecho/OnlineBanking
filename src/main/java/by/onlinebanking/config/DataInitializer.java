@@ -53,6 +53,7 @@ public class DataInitializer implements CommandLineRunner {
                     .orElseThrow(() -> new IllegalStateException("Admin role not found"));
 
             User admin = new User();
+            admin.setActive(true);
             admin.setEmail(adminEmail);
             admin.setPassword(passwordEncoder.encode(adminPassword));
             admin.setFullName("Bank Administrator");

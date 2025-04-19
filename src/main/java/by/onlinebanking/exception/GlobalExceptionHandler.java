@@ -12,6 +12,7 @@ import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -172,6 +173,19 @@ public class GlobalExceptionHandler {
                 details
         );
 
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+    }
+
+    @ExceptionHandler(LockedException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public ResponseEntity<ErrorResponse> handleLockedException() {
+        ErrorResponse response = new ErrorResponse(
+                "ACCOUNT_LOCKED",
+                "Your account has been locked. Please contact support.",
+                Map.of(
+                        "resolution", "Contact administrator to unlock your account"
+                )
+        );
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
     }
 }

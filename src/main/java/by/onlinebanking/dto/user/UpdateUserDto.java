@@ -23,6 +23,9 @@ import lombok.ToString;
 @Setter
 @ToString
 public class UpdateUserDto implements UserBaseDto {
+    @NotNull(groups = {OnUpdate.class}, message = "Activity status is required")
+    private Boolean active;
+
     @NotBlank(groups = {OnUpdate.class}, message = "Full name is required")
     @Size(groups = {OnUpdate.class, OnPatch.class}, min = 2, max = 100,
             message = "Full name must be between 2 and 100 characters")

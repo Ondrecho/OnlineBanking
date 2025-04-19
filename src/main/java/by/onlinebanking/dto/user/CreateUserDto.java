@@ -19,6 +19,8 @@ import lombok.ToString;
 @Setter
 @ToString
 public class CreateUserDto implements UserBaseDto {
+    private Boolean active;
+
     @NotBlank(message = "Full name is required")
     @Size(min = 2, max = 100, message = "Full name must be between 2 and 100 characters")
     @Pattern(regexp = "^[a-zA-Z\\s]+$",

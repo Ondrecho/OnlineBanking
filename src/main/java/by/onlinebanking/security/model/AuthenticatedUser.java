@@ -9,9 +9,11 @@ import org.springframework.security.core.userdetails.UserDetails;
 @Getter
 public class AuthenticatedUser implements UserDetails {
     private final User user;
+    private final boolean isAccountNonLocked;
 
     public AuthenticatedUser(User user) {
         this.user = user;
+        this.isAccountNonLocked = user.getActive();
     }
 
     @Override
@@ -27,5 +29,10 @@ public class AuthenticatedUser implements UserDetails {
     @Override
     public String getPassword() {
         return user.getPassword();
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return isAccountNonLocked;
     }
 }

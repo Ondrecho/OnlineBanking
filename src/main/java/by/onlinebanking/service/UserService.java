@@ -121,7 +121,8 @@ public class UserService {
 
         User user = new User();
 
-        setUserFields(userDto, user);
+        user.setActive(userDto.getActive());
+        setUserBaseFields(userDto, user);
         Set<Role> roles = rolesValidator.validateAndFindRoles(userDto.getRoles());
         user.setRoles(roles);
 
@@ -144,14 +145,14 @@ public class UserService {
 
         checkEmailUniqueness(userDto.getEmail(), user.getId());
 
-        setUserFields(userDto, user);
+        setUserBaseFields(userDto, user);
         Set<Role> roles = rolesValidator.validateAndFindRoles(userDto.getRoles());
         user.setRoles(roles);
 
         return new UserResponseDto(userRepository.save(user));
     }
 
-    private void setUserFields(UserBaseDto userDto, User user) {
+    private void setUserBaseFields(UserBaseDto userDto, User user) {
         user.setFullName(userDto.getFullName());
         user.setEmail(userDto.getEmail());
         user.setDateOfBirth(userDto.getDateOfBirth());
@@ -177,11 +178,12 @@ public class UserService {
     private void checkEmailUniqueness(String email, Long currentUserId) {
         if (userRepository.existsByEmailAndIdNot(email, currentUserId)) {
             throw new BusinessException("Email already taken by another user")
-                    .addDetail("email", email);
+                    .addDetail(EMAIL, email);
         }
     }
 
     private void updateUserFields(UpdateUserDto userDto, User user) {
+        if (userDto.getActive() != null) user.setActive(userDto.getActive());
         if (userDto.getFullName() != null) user.setFullName(userDto.getFullName());
         if (userDto.getEmail() != null) user.setEmail(userDto.getEmail());
         if (userDto.getDateOfBirth() != null) user.setDateOfBirth(userDto.getDateOfBirth());
@@ -225,7 +227,7 @@ public class UserService {
                 .map(dto -> {
                     User user = new User();
                     try {
-                        setUserFields(dto, user);
+                        setUserBaseFields(dto, user);
                         Set<Role> roles = rolesValidator.validateAndFindRoles(dto.getRoles());
                         user.setRoles(roles);
                     } catch (ValidationException ex) {

@@ -24,6 +24,9 @@ import lombok.Setter;
 @Getter
 @Setter
 public class User {
+    @Column(nullable = false)
+    private Boolean active = true;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
