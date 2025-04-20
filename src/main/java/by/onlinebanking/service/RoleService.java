@@ -37,10 +37,7 @@ public class RoleService {
     }
 
     public List<RoleDto> getAllRoles() {
-        return roleRepository.findAll()
-                .stream()
-                .map(RoleDto::new)
-                .toList();
+        return roleRepository.findAllRolesWithUserCount();
     }
 
     @CacheEvict(value = "users", allEntries = true)

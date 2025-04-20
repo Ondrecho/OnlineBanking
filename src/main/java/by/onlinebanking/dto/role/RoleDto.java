@@ -19,6 +19,8 @@ public class RoleDto {
             message = "Role name must start with 'ROLE_' and contain uppercase letters")
     private String name;
 
+    private Long usersCount;
+
     public RoleDto() {
         // for JSON serialization
     }
@@ -26,5 +28,11 @@ public class RoleDto {
     public RoleDto(Role role) {
         this.id = role.getId();
         this.name = role.getName();
+    }
+
+    public RoleDto(Long id, String name, Long usersCount) {
+        this.id = id;
+        this.name = name;
+        this.usersCount = usersCount;
     }
 }
