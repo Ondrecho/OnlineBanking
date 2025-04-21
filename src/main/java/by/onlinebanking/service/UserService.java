@@ -74,6 +74,29 @@ public class UserService {
         userRepository.save(user);
     }
 
+    @Transactional
+    public void changePassword(String currentPassword, String newPassword, String confirmPassword) {
+        User user = getUserFromAuthentication();
+
+        if (!newPassword.equals(confirmPassword)) {
+            throw new ValidationException("New password and confirmation do not match")
+                    .addDetail("error", "password_mismatch");
+        }
+
+        if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+            throw new ValidationException("Current password is incorrect")
+                    .addDetail("error", "invalid_current_password");
+        }
+
+        if (passwordEncoder.matches(newPassword, user.getPassword())) {
+            throw new ValidationException("New password must be different from current password")
+                    .addDetail("error", "same_password");
+        }
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+    }
+
     public UserResponseDto getUserById(Long id) {
         return new UserResponseDto(userRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND)

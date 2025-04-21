@@ -192,7 +192,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(BadCredentialsException.class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
-    public ResponseEntity<ErrorResponse> handleBadCredentialsException(BadCredentialsException ex) {
+    public ResponseEntity<ErrorResponse> handleBadCredentialsException() {
         ErrorResponse response = new ErrorResponse(
                 "AUTHENTICATION_FAILED",
                 "Invalid username or password",
