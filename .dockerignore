@@ -1,0 +1,17 @@
+.git
+.idea
+.gitattributes
+.gitignore
+README.md
+.help.md
+
+# IntelliJ / IDE
+*.iml
+
+# Maven
+.mvn
+mvnw
+mvnw.cmd
+
+# build
+target/
