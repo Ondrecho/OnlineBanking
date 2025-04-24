@@ -110,7 +110,7 @@ class UserServiceTest {
 
         assertFalse(result.isEmpty());
         assertEquals(1, result.getSize());
-       // assertEquals("Test User", result.get(0).getFullName());
+
         verify(userRepository, times(1)).findAll(any(Specification.class));
     }
 
@@ -123,7 +123,7 @@ class UserServiceTest {
 
         assertFalse(result.isEmpty());
         assertEquals(1, result.getSize());
-       // assertEquals("Test User", result.get(0).getFullName());
+
         verify(userRepository, times(1)).findAll(any(Specification.class));
     }
 

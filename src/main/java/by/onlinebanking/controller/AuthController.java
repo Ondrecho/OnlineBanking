@@ -35,14 +35,16 @@ public class AuthController {
     }
 
     @PostMapping("/change-password")
-    public ResponseEntity<?> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
+    public ResponseEntity<Map<String, String>> changePassword(
+            @Valid @RequestBody ChangePasswordRequest request
+    ) {
         userService.changePassword(
                 request.getCurrentPassword(),
                 request.getNewPassword(),
                 request.getConfirmPassword()
         );
 
-        return ResponseEntity.ok().body(Map.of(
+        return ResponseEntity.ok(Map.of(
                 "message", "Password changed successfully"
         ));
     }

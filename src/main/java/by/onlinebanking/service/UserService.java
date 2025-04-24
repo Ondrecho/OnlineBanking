@@ -38,6 +38,7 @@ public class UserService {
     private static final String USER_ID = "userId";
     private static final String USER_NOT_FOUND = "User not found";
     private static final String EMAIL = "email";
+    private static final String ERROR = "error";
 
     private final UserRepository userRepository;
     private final RolesValidator rolesValidator;
@@ -80,17 +81,17 @@ public class UserService {
 
         if (!newPassword.equals(confirmPassword)) {
             throw new ValidationException("New password and confirmation do not match")
-                    .addDetail("error", "password_mismatch");
+                    .addDetail(ERROR, "password_mismatch");
         }
 
         if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
             throw new ValidationException("Current password is incorrect")
-                    .addDetail("error", "invalid_current_password");
+                    .addDetail(ERROR, "invalid_current_password");
         }
 
         if (passwordEncoder.matches(newPassword, user.getPassword())) {
             throw new ValidationException("New password must be different from current password")
-                    .addDetail("error", "same_password");
+                    .addDetail(ERROR, "same_password");
         }
 
         user.setPassword(passwordEncoder.encode(newPassword));
@@ -256,7 +257,7 @@ public class UserService {
                     } catch (ValidationException ex) {
                         throw new BusinessException("Invalid roles for user: " + dto.getEmail())
                                 .addDetail(EMAIL, dto.getEmail())
-                                .addDetail("error", ex.getMessage());
+                                .addDetail(ERROR, ex.getMessage());
                     }
                     return user;
                 })
