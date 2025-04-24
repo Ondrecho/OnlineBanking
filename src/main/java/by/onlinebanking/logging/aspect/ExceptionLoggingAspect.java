@@ -1,5 +1,6 @@
 package by.onlinebanking.logging.aspect;
 
+import java.util.Arrays;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.AfterThrowing;
 import org.aspectj.lang.annotation.Aspect;
@@ -21,10 +22,17 @@ public class ExceptionLoggingAspect {
         String methodName = joinPoint.getSignature().toShortString();
         Object[] args = joinPoint.getArgs();
 
-        LOGGER.error(
-                "Exception in method: {} | Arguments: {} | Message: {} | Reason: {}",
-                methodName, args, ex.getMessage(), ex.getCause() != null ? ex.getCause() : "N/A",
-                ex
-        );
+        if (LOGGER.isErrorEnabled()) {
+            LOGGER.error(
+                    "Exception in method: {} | Args: {} | Type: {} | Msg: {} | At: {}",
+                    methodName,
+                    Arrays.toString(args),
+                    ex.getClass().getSimpleName(),
+                    ex.getMessage(),
+                    ex.getStackTrace().length > 0 ? ex.getStackTrace()[0] : "?"
+            );
+        }
+
+        LOGGER.debug("Full exception stack trace", ex);
     }
 }
