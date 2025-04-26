@@ -102,7 +102,11 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:9002")); // for dev only
+        configuration.setAllowedOrigins(List.of(
+                "http://localhost:3000",
+                "http://localhost:9002",
+                "https://bankwise-cjzp.onrender.com"
+        ));
         configuration.setAllowedMethods(List.of("*"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
