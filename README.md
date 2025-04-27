@@ -41,7 +41,7 @@ The project is designed with scalability, security, and maintainability in mind.
 - **JWT (JSON Web Tokens)**: For secure authentication and authorization.
 - **Swagger/OpenAPI**: For API documentation and testing.
 - **Maven**: Build automation and dependency management.
-- **SonarCloud**: For code quality and security analysis.
+- **SonarCloud** & **CheckStyle**: For code quality and security analysis.
 
 ---
 
@@ -68,13 +68,18 @@ The project is designed with scalability, security, and maintainability in mind.
    cd OnlineBanking
    ```
 
-2. **Configure the Database**:
-    - Update the `application.properties` file with your PostgreSQL credentials:
-      ```properties
-      spring.datasource.url=jdbc:postgresql://localhost:5432/online_banking
-      spring.datasource.username=your_username
-      spring.datasource.password=your_password
-      ```
+2. **Configure Environment Variables**:
+   Ensure the following environment variables are set on Render:
+
+| Variable                     | Description              |
+|------------------------------|--------------------------|
+| `SPRING_DATASOURCE_URL`      | JDBC URL of the database |
+| `SPRING_DATASOURCE_USERNAME` | DB username              |
+| `SPRING_DATASOURCE_PASSWORD` | DB password              |
+| `JWT_SECRET`                 | Secret key for JWT       |
+| `JWT_EXPIRATION`             | Expiration time for JWT  |
+| `ADMIN_EMAIL`                | Default admin email      |
+| `ADMIN_PASSWORD`             | Default admin password   |
 
 3. **Build the Project**:
    ```bash
@@ -104,10 +109,16 @@ The API is fully documented using **Swagger/OpenAPI**. You can explore the API e
 
 ---
 
-### Schema Diagram
-<img src="https://github.com/Ondrecho/OnlineBanking/blob/main/pics/diagram.png" alt="Database Schema Diagram" width="400" height="440" />
+## Schema Diagram
+<img src="https://github.com/Ondrecho/OnlineBanking/blob/main/images/diagram.png" alt="Database Schema Diagram" width="400" height="440" />
 
 ---
+
+## Deploy
+The API is deployed on Render https://onlinebanking-glvo.onrender.com  
+See also the frontend interface interacting with this API on [BankWise repository](https://github.com/Ondrecho/BankWise)
+---
+
 ## Development
 If you'd like to contribute to the project, follow these steps:
 1. **Fork the Repository**.

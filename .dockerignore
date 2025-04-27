@@ -1,4 +1,6 @@
 .git
+.github
+images
 .idea
 .gitattributes
 .gitignore
@@ -15,5 +17,3 @@ mvnw.cmd
 
 # build
 target/
-
-pics
