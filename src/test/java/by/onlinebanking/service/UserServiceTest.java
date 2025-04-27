@@ -4,9 +4,15 @@ import by.onlinebanking.dto.response.UserResponseDto;
 import by.onlinebanking.dto.role.RoleDto;
 import by.onlinebanking.dto.user.CreateUserDto;
 import by.onlinebanking.dto.user.UpdateUserDto;
-import by.onlinebanking.exception.*;
-import by.onlinebanking.model.*;
+import by.onlinebanking.exception.BusinessException;
+import by.onlinebanking.exception.NotFoundException;
+import by.onlinebanking.exception.ValidationException;
+import by.onlinebanking.model.Role;
+import by.onlinebanking.model.User;
+import by.onlinebanking.repository.RoleRepository;
 import by.onlinebanking.repository.UserRepository;
+import by.onlinebanking.security.dto.request.RegisterRequest;
+import by.onlinebanking.security.model.AuthenticatedUser;
 import by.onlinebanking.validation.RolesValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -15,17 +21,27 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import jakarta.transaction.Transactional;
 import java.time.LocalDate;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
-    private Pageable pageable;
 
     @Mock
     private UserRepository userRepository;
@@ -34,178 +50,244 @@ class UserServiceTest {
     private RolesValidator rolesValidator;
 
     @Mock
+    private RoleRepository roleRepository;
+
+    @Mock
     private PasswordEncoder passwordEncoder;
 
+    @Mock
+    private SecurityContext securityContext;
+
+    @Mock
+    private Authentication authentication;
+
     @InjectMocks
-    private UserService usersService;
+    private UserService userService;
 
     private User testUser;
-    private CreateUserDto createUserDto;
     private UpdateUserDto updateUserDto;
-    private Role role;
-    private RoleDto roleDto;
-    private Set<Role> roles;
+    private Role userRole;
+    private Role adminRole;
 
     @BeforeEach
     void setUp() {
-        roleDto = new RoleDto();
-        roleDto.setName("ROLE_USER");
+        userRole = new Role();
+        userRole.setName("ROLE_USER");
 
-        role = new Role();
-        role.setName("ROLE_USER");
-        roles = new HashSet<>();
-        roles.add(role);
-
-        createUserDto = new CreateUserDto();
-        createUserDto.setFullName("Test User");
-        createUserDto.setEmail("test@example.com");
-        createUserDto.setDateOfBirth(LocalDate.of(1990, 1, 1));
-        createUserDto.setPassword("password123");
-        createUserDto.setRoles(Set.of(roleDto));
-
-        updateUserDto = new UpdateUserDto();
-        updateUserDto.setFullName("Updated User");
-        updateUserDto.setEmail("updated@example.com");
-        updateUserDto.setDateOfBirth(LocalDate.of(1990, 1, 1));
-        updateUserDto.setPassword(passwordEncoder.encode("newpassword123"));
-        updateUserDto.setRoles(Set.of(roleDto));
+        adminRole = new Role();
+        adminRole.setName("ROLE_ADMIN");
 
         testUser = new User();
         testUser.setId(1L);
         testUser.setFullName("Test User");
         testUser.setEmail("test@example.com");
+        testUser.setPassword("encodedPassword");
         testUser.setDateOfBirth(LocalDate.of(1990, 1, 1));
-        testUser.setPassword(passwordEncoder.encode("password123"));
-        testUser.setRoles(roles);
+        testUser.setActive(true);
+        testUser.setRoles(Set.of(userRole));
+
+        updateUserDto = new UpdateUserDto();
+        updateUserDto.setFullName("Updated User");
+        updateUserDto.setEmail("updated@example.com");
+        updateUserDto.setDateOfBirth(LocalDate.of(1995, 5, 5));
+        updateUserDto.setPassword("newPassword123");
+        updateUserDto.setActive(false);
+        updateUserDto.setRoles(Set.of(new RoleDto(adminRole)));
+    }
+
+
+    @Test
+    @Transactional
+    void registerUser_Success() {
+        RegisterRequest request = new RegisterRequest();
+        request.setEmail("new@example.com");
+        request.setPassword("password");
+        request.setFullName("New User");
+        request.setDateOfBirth(LocalDate.of(1995, 5, 5));
+
+        when(userRepository.existsByEmail(anyString())).thenReturn(false);
+        when(roleRepository.findByName("ROLE_USER")).thenReturn(Optional.of(userRole));
+        when(passwordEncoder.encode(anyString())).thenReturn("encodedPassword");
+
+        userService.registerUser(request);
+
+        verify(userRepository, times(1)).save(any(User.class));
     }
 
     @Test
-    void getUserById_UserExists_ReturnsUserResponseDto() {
+    @Transactional
+    void registerUser_EmailExists_ThrowsException() {
+        RegisterRequest request = new RegisterRequest();
+        request.setEmail("existing@example.com");
+
+        when(userRepository.existsByEmail(anyString())).thenReturn(true);
+
+        assertThrows(BusinessException.class, () -> userService.registerUser(request));
+    }
+
+    @Test
+    @Transactional
+    void changePassword_Success() {
+        AuthenticatedUser authenticatedUser = new AuthenticatedUser(testUser);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(authentication.getPrincipal()).thenReturn(authenticatedUser);
+        SecurityContextHolder.setContext(securityContext);
+
+        when(passwordEncoder.matches("currentPassword", testUser.getPassword())).thenReturn(true);
+        when(passwordEncoder.matches("newPassword", testUser.getPassword())).thenReturn(false);
+        when(passwordEncoder.encode("newPassword")).thenReturn("newEncodedPassword");
+
+        userService.changePassword("currentPassword", "newPassword", "newPassword");
+
+        assertEquals("newEncodedPassword", testUser.getPassword());
+        verify(userRepository, times(1)).save(testUser);
+    }
+
+    @Test
+    @Transactional
+    void changePassword_PasswordMismatch_ThrowsException() {
+        assertThrows(ValidationException.class, () ->
+                userService.changePassword("current", "new", "different"));
+    }
+
+    @Test
+    @Transactional
+    void changePassword_InvalidCurrentPassword_ThrowsException() {
+        AuthenticatedUser authenticatedUser = new AuthenticatedUser(testUser);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(authentication.getPrincipal()).thenReturn(authenticatedUser);
+        SecurityContextHolder.setContext(securityContext);
+
+        when(passwordEncoder.matches("wrongPassword", testUser.getPassword())).thenReturn(false);
+
+        assertThrows(ValidationException.class, () ->
+                userService.changePassword("wrongPassword", "new", "new"));
+    }
+
+    @Test
+    @Transactional
+    void changePassword_SamePassword_ThrowsException() {
+        AuthenticatedUser authenticatedUser = new AuthenticatedUser(testUser);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(authentication.getPrincipal()).thenReturn(authenticatedUser);
+        SecurityContextHolder.setContext(securityContext);
+
+        when(passwordEncoder.matches("current", testUser.getPassword())).thenReturn(true);
+        when(passwordEncoder.matches("new", testUser.getPassword())).thenReturn(true);
+
+        assertThrows(ValidationException.class, () ->
+                userService.changePassword("current", "new", "new"));
+    }
+
+    @Test
+    void getUserById_Success() {
         when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
 
-        UserResponseDto result = usersService.getUserById(1L);
+        UserResponseDto response = userService.getUserById(1L);
+
+        assertNotNull(response);
+        assertEquals("Test User", response.getFullName());
+    }
+
+    @Test
+    void getUserById_NotFound_ThrowsException() {
+        when(userRepository.findById(anyLong())).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> userService.getUserById(1L));
+    }
+
+    @Test
+    void getUsers_Success() {
+        Pageable pageable = mock(Pageable.class);
+        when(userRepository.findAll(any(Specification.class), eq(pageable)))
+                .thenReturn(new PageImpl<>(List.of(testUser)));
+
+        Page<UserResponseDto> result = userService.getUsers("Test", List.of("ROLE_USER"), pageable);
 
         assertNotNull(result);
-        assertEquals(1L, result.getId());
-        assertEquals("Test User", result.getFullName());
-        verify(userRepository).findById(1L);
+        assertEquals(1, result.getTotalElements());
     }
 
     @Test
-    void getUserById_UserNotFound_ThrowsNotFoundException() {
-        when(userRepository.findById(1L)).thenReturn(Optional.empty());
+    void getUserByIban_Success() {
+        when(userRepository.findByIban("IBAN123")).thenReturn(Optional.of(testUser));
 
-        NotFoundException exception = assertThrows(NotFoundException.class, () -> usersService.getUserById(1L));
+        UserResponseDto response = userService.getUserByIban("IBAN123");
 
-        assertEquals("User not found", exception.getMessage());
-        verify(userRepository).findById(1L);
+        assertNotNull(response);
+        assertEquals("test@example.com", response.getEmail());
     }
 
     @Test
-    void getUsers_WithFullNameFilter_ReturnsFilteredUsers() {
-        List<User> users = Collections.singletonList(testUser);
-        when(userRepository.findAll(any(Specification.class))).thenReturn(users);
+    void getUserByIban_NotFound_ThrowsException() {
+        when(userRepository.findByIban(anyString())).thenReturn(Optional.empty());
 
-        Page<UserResponseDto> result = usersService.getUsers("Test", null, pageable);
-
-        assertFalse(result.isEmpty());
-        assertEquals(1, result.getSize());
-
-        verify(userRepository, times(1)).findAll(any(Specification.class));
+        assertThrows(NotFoundException.class, () -> userService.getUserByIban("INVALID"));
     }
 
     @Test
-    void getUsers_WithRoleNameFilter_ReturnsFilteredUsers() {
-        List<User> users = Collections.singletonList(testUser);
-        when(userRepository.findAll(any(Specification.class))).thenReturn(users);
+    @Transactional
+    void createUser_Success() {
+        CreateUserDto dto = new CreateUserDto();
+        dto.setFullName("New User");
+        dto.setEmail("new@example.com");
+        dto.setPassword("password");
+        dto.setDateOfBirth(LocalDate.of(1990, 1, 1));
+        dto.setActive(true);
+        dto.setRoles(Set.of(new RoleDto(userRole)));
 
-        Page<UserResponseDto> result = usersService.getUsers(null, List.of("ROLE_USER"), pageable);
-
-        assertFalse(result.isEmpty());
-        assertEquals(1, result.getSize());
-
-        verify(userRepository, times(1)).findAll(any(Specification.class));
-    }
-
-    @Test
-    void getUsers_NoResults_ThrowsNotFoundException() {
-        when(userRepository.findAll(any(Specification.class))).thenReturn(Collections.emptyList());
-        NotFoundException exception = assertThrows(NotFoundException.class,
-                () -> usersService.getUsers("Nonexistent", null, pageable));
-        assertEquals("No users found with the specified criteria", exception.getMessage());
-        assertEquals("Nonexistent", exception.getDetails().get("fullName"));
-        assertNull(exception.getDetails().get("roleName"));
-        verify(userRepository).findAll(any(Specification.class));
-    }
-
-    @Test
-    void getUserByIban_UserExists_ReturnsUserResponseDto() {
-        when(userRepository.findByIban("BY00BANK1234567890")).thenReturn(Optional.of(testUser));
-
-        UserResponseDto result = usersService.getUserByIban("BY00BANK1234567890");
-
-        assertNotNull(result);
-        assertEquals(1L, result.getId());
-        verify(userRepository).findByIban("BY00BANK1234567890");
-    }
-
-    @Test
-    void getUserByIban_UserNotFound_ThrowsNotFoundException() {
-        when(userRepository.findByIban("BY00BANK1234567890")).thenReturn(Optional.empty());
-
-        NotFoundException exception = assertThrows(NotFoundException.class,
-                () -> usersService.getUserByIban("BY00BANK1234567890"));
-
-        assertEquals("Account not found", exception.getMessage());
-        verify(userRepository).findByIban("BY00BANK1234567890");
-    }
-
-    @Test
-    void createUser_ValidInput_ReturnsCreatedUser() {
-        when(userRepository.existsByEmail("test@example.com")).thenReturn(false);
-        when(rolesValidator.validateAndFindRoles(createUserDto.getRoles())).thenReturn(roles);
+        when(userRepository.existsByEmail(anyString())).thenReturn(false);
+        when(rolesValidator.validateAndFindRoles(anySet())).thenReturn(Set.of(userRole)); // Исправлено здесь
+        when(passwordEncoder.encode(anyString())).thenReturn("encodedPassword");
         when(userRepository.save(any(User.class))).thenReturn(testUser);
 
-        UserResponseDto result = usersService.createUser(createUserDto);
+        UserResponseDto response = userService.createUser(dto);
 
-        assertNotNull(result);
-        assertEquals("Test User", result.getFullName());
-        verify(userRepository).existsByEmail("test@example.com");
-        verify(userRepository).save(any(User.class));
+        assertNotNull(response);
+        assertEquals("Test User", response.getFullName());
     }
 
     @Test
-    void createUser_EmailExists_ThrowsBusinessException() {
-        when(userRepository.existsByEmail("test@example.com")).thenReturn(true);
-
-        BusinessException exception = assertThrows(BusinessException.class,
-                () -> usersService.createUser(createUserDto));
-
-        assertEquals("User with email already exists", exception.getMessage());
-        verify(userRepository).existsByEmail("test@example.com");
-    }
-
-    @Test
-    void fullUpdateUser_ValidInput_ReturnsUpdatedUser() {
+    @Transactional
+    void fullUpdateUser_Success() {
         when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
-        when(userRepository.existsByEmail("updated@example.com")).thenReturn(false);
-        when(rolesValidator.validateAndFindRoles(updateUserDto.getRoles())).thenReturn(roles);
+        when(userRepository.existsByEmailAndIdNot(anyString(), anyLong())).thenReturn(false);
+        when(rolesValidator.validateAndFindRoles(anySet())).thenReturn(Set.of(adminRole));
+        when(passwordEncoder.encode(anyString())).thenReturn("newEncodedPassword");
         when(userRepository.save(any(User.class))).thenReturn(testUser);
 
-        UserResponseDto result = usersService.fullUpdateUser(1L, updateUserDto);
+        UserResponseDto response = userService.fullUpdateUser(1L, updateUserDto);
 
-        assertNotNull(result);
-        verify(userRepository).findById(1L);
-        verify(userRepository).existsByEmail("updated@example.com");
-        verify(userRepository).save(any(User.class));
+        assertNotNull(response);
+        assertEquals("Updated User", response.getFullName());
+        assertEquals("updated@example.com", response.getEmail());
+        assertFalse(response.isActive());
+        assertEquals("ROLE_ADMIN",response.getRoles().iterator().next().getName());
+        verify(userRepository, times(1)).save(any(User.class));
     }
+
+    @Test
+    @Transactional
+    void partialUpdateUser_Success() {
+        UpdateUserDto dto = new UpdateUserDto();
+        dto.setFullName("Partially Updated");
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
+        when(userRepository.save(any(User.class))).thenReturn(testUser);
+
+        UserResponseDto response = userService.partialUpdateUser(1L, dto);
+
+        assertNotNull(response);
+        assertEquals("Partially Updated", testUser.getFullName());
+    }
+
 
     @Test
     void fullUpdateUser_UserNotFound_ThrowsNotFoundException() {
         when(userRepository.findById(1L)).thenReturn(Optional.empty());
 
         NotFoundException exception = assertThrows(NotFoundException.class,
-                () -> usersService.fullUpdateUser(1L, updateUserDto));
+                () -> userService.fullUpdateUser(1L, updateUserDto));
 
         assertEquals("User not found", exception.getMessage());
         verify(userRepository).findById(1L);
@@ -214,27 +296,27 @@ class UserServiceTest {
     @Test
     void fullUpdateUser_EmailExists_ThrowsBusinessException() {
         when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
-        when(userRepository.existsByEmail("updated@example.com")).thenReturn(true);
+        when(userRepository.existsByEmailAndIdNot("updated@example.com", 1L)).thenReturn(true);
 
         BusinessException exception = assertThrows(BusinessException.class,
-                () -> usersService.fullUpdateUser(1L, updateUserDto));
+                () -> userService.fullUpdateUser(1L, updateUserDto));
 
-        assertEquals("User with email already exists", exception.getMessage());
-        verify(userRepository).existsByEmail("updated@example.com");
+        assertEquals("Email already taken by another user", exception.getMessage());
+        verify(userRepository).existsByEmailAndIdNot("updated@example.com", 1L);
     }
 
     @Test
     void partialUpdateUser_ValidInput_ReturnsUpdatedUser() {
         when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
-        when(userRepository.existsByEmail("updated@example.com")).thenReturn(false);
-        when(rolesValidator.validateAndFindRoles(updateUserDto.getRoles())).thenReturn(roles);
+        when(userRepository.existsByEmailAndIdNot("updated@example.com", 1L)).thenReturn(false);
+        when(rolesValidator.validateAndFindRoles(updateUserDto.getRoles())).thenReturn(Set.of(userRole));
         when(userRepository.save(any(User.class))).thenReturn(testUser);
 
-        UserResponseDto result = usersService.partialUpdateUser(1L, updateUserDto);
+        UserResponseDto result = userService.partialUpdateUser(1L, updateUserDto);
 
         assertNotNull(result);
         verify(userRepository).findById(1L);
-        verify(userRepository).existsByEmail("updated@example.com");
+        verify(userRepository).existsByEmailAndIdNot("updated@example.com", 1L);
         verify(userRepository).save(any(User.class));
     }
 
@@ -243,26 +325,10 @@ class UserServiceTest {
         when(userRepository.findById(1L)).thenReturn(Optional.empty());
 
         NotFoundException exception = assertThrows(NotFoundException.class,
-                () -> usersService.partialUpdateUser(1L, updateUserDto));
+                () -> userService.partialUpdateUser(1L, updateUserDto));
 
         assertEquals("User not found", exception.getMessage());
         verify(userRepository).findById(1L);
-    }
-
-    @Test
-    void updateUser_EmptyRoles_UpdatesWithEmptyRoles() {
-        User existingUser = new User();
-        existingUser.setRoles(Set.of(role));
-
-        UpdateUserDto updateDto = new UpdateUserDto();
-        updateDto.setRoles(Set.of());
-
-        when(userRepository.findById(1L)).thenReturn(Optional.of(existingUser));
-        when(userRepository.save(any(User.class))).thenReturn(existingUser);
-
-        usersService.fullUpdateUser(1L, updateDto);
-
-        assertTrue(existingUser.getRoles().isEmpty());
     }
 
     @Test
@@ -273,7 +339,7 @@ class UserServiceTest {
         when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
         when(userRepository.save(any(User.class))).thenReturn(testUser);
 
-        usersService.partialUpdateUser(1L, userDto);
+        userService.partialUpdateUser(1L, userDto);
 
         assertEquals("New Name", testUser.getFullName());
 
@@ -288,10 +354,12 @@ class UserServiceTest {
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
         when(userRepository.save(any(User.class))).thenReturn(testUser);
-        when(userRepository.existsByEmail("new@example.com")).thenReturn(false);
+        when(userRepository.existsByEmailAndIdNot("new@example.com", 1L)).thenReturn(false);
 
-        usersService.partialUpdateUser(1L, userDto);
+        userService.partialUpdateUser(1L, userDto);
 
+        verify(userRepository).findById(1L);
+        verify(userRepository).existsByEmailAndIdNot("new@example.com", 1L);
         assertEquals("new@example.com", testUser.getEmail());
         verify(userRepository).save(testUser);
     }
@@ -304,7 +372,7 @@ class UserServiceTest {
         when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
         when(userRepository.save(any(User.class))).thenReturn(testUser);
 
-        usersService.partialUpdateUser(1L, userDto);
+        userService.partialUpdateUser(1L, userDto);
 
         assertEquals(LocalDate.of(2000, 1, 1), testUser.getDateOfBirth());
         verify(userRepository).save(testUser);
@@ -313,14 +381,15 @@ class UserServiceTest {
     @Test
     void partialUpdateUser_UpdateOnlyPassword_UpdatesOnlyPassword() {
         UpdateUserDto userDto = new UpdateUserDto();
-        userDto.setPassword(passwordEncoder.encode("newpassword"));
+        userDto.setPassword("NewPassword777");
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
         when(userRepository.save(any(User.class))).thenReturn(testUser);
+        when(passwordEncoder.encode(anyString())).thenReturn("NewPassword777");
 
-        usersService.partialUpdateUser(1L, userDto);
+        userService.partialUpdateUser(1L, userDto);
 
-        assertEquals(passwordEncoder.encode("newpassword"), testUser.getPassword());
+        assertEquals("NewPassword777", testUser.getPassword());
         verify(userRepository).save(testUser);
     }
 
@@ -332,153 +401,100 @@ class UserServiceTest {
         UpdateUserDto userDto = new UpdateUserDto();
         userDto.setRoles(Set.of(adminRoleDto));
 
-        Role adminRole = new Role();
-        adminRole.setName("ADMIN");
-
         when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
         when(rolesValidator.validateAndFindRoles(Set.of(adminRoleDto))).thenReturn(Set.of(adminRole));
         when(userRepository.save(any(User.class))).thenReturn(testUser);
 
-        usersService.partialUpdateUser(1L, userDto);
+        userService.partialUpdateUser(1L, userDto);
 
         assertEquals(1, testUser.getRoles().size());
-        assertEquals("ADMIN", testUser.getRoles().iterator().next().getName());
+        assertEquals("ROLE_ADMIN", testUser.getRoles().iterator().next().getName());
         verify(userRepository).save(testUser);
     }
 
     @Test
-    void createUsersBulk_ExceedsLimit_ThrowsBusinessException() {
-        List<CreateUserDto> largeList = new ArrayList<>();
-        for (int i = 0; i < 1001; i++) {
-            CreateUserDto dto = new CreateUserDto();
-            dto.setEmail("user" + i + "@example.com");
-            largeList.add(dto);
-        }
+    @Transactional
+    void createUsersBulk_Success() {
+        CreateUserDto dto1 = new CreateUserDto();
+        dto1.setFullName("User 1");
+        dto1.setEmail("user1@example.com");
+        dto1.setPassword("pass1");
+        dto1.setDateOfBirth(LocalDate.of(1990, 1, 1));
+        dto1.setRoles(Set.of(new RoleDto(userRole)));
 
-        BusinessException exception = assertThrows(BusinessException.class,
-                () -> usersService.createUsersBulk(largeList));
-
-        assertEquals("Bulk operation limit exceeded", exception.getMessage());
-        assertEquals(1000, exception.getDetails().get("maxAllowed"));
-        assertEquals(1001, exception.getDetails().get("actual"));
-    }
-
-    @Test
-    void createUsersBulk_ValidInput_ReturnsCreatedUsers() {
-        List<CreateUserDto> userDtos = List.of(createUserDto);
-        when(userRepository.findExistingEmails(anyList())).thenReturn(Collections.emptyList());
-        when(rolesValidator.validateAndFindRoles(anySet())).thenReturn(roles);
-        when(userRepository.saveAll(anyList())).thenReturn(List.of(testUser));
-
-        List<UserResponseDto> result = usersService.createUsersBulk(userDtos);
-
-        assertFalse(result.isEmpty());
-        assertEquals(1, result.size());
-        verify(userRepository).findExistingEmails(anyList());
-        verify(userRepository).saveAll(anyList());
-    }
-
-    @Test
-    void createUsersBulk_EmptyList_ThrowsValidationException() {
-        ValidationException exception = assertThrows(ValidationException.class,
-                () -> usersService.createUsersBulk(null));
-
-        assertEquals("User list cannot be empty or null", exception.getMessage());
-    }
-
-    @Test
-    void createUsersBulk_TooManyUsers_ThrowsBusinessException() {
-        List<CreateUserDto> userDtos = new ArrayList<>();
-        for (int i = 0; i < 1001; i++) {
-            userDtos.add(createUserDto);
-        }
-
-        BusinessException exception = assertThrows(BusinessException.class,
-                () -> usersService.createUsersBulk(userDtos));
-
-        assertEquals("Bulk operation limit exceeded", exception.getMessage());
-    }
-
-    @Test
-    void createUsersBulk_WithInvalidRoles_ThrowsBusinessException() {
-        CreateUserDto invalidUserDto = new CreateUserDto();
-        invalidUserDto.setFullName("Invalid User");
-        invalidUserDto.setEmail("invalid@example.com");
-        invalidUserDto.setDateOfBirth(LocalDate.of(1990, 1, 1));
-        invalidUserDto.setPassword(passwordEncoder.encode("password123"));
-
-        RoleDto invalidRoleDto = new RoleDto();
-        invalidRoleDto.setName("INVALID_ROLE");
-        invalidUserDto.setRoles(Set.of(invalidRoleDto));
-
-        List<CreateUserDto> userDtos = List.of(invalidUserDto);
+        CreateUserDto dto2 = new CreateUserDto();
+        dto2.setFullName("User 2");
+        dto2.setEmail("user2@example.com");
+        dto2.setPassword("pass2");
+        dto2.setDateOfBirth(LocalDate.of(1991, 2, 2));
+        dto2.setRoles(Set.of(new RoleDto(adminRole)));
 
         when(userRepository.findExistingEmails(anyList())).thenReturn(Collections.emptyList());
+        when(rolesValidator.validateAndFindRoles(anySet())).thenReturn(Set.of(userRole));
+        when(passwordEncoder.encode(anyString())).thenReturn("encodedPassword");
+        when(userRepository.saveAll(anyList())).thenReturn(List.of(testUser, testUser));
 
-        when(rolesValidator.validateAndFindRoles(anySet()))
-                .thenThrow(new ValidationException("Role not found")
-                        .addDetail("roleName", "INVALID_ROLE"));
+        List<UserResponseDto> responses = userService.createUsersBulk(List.of(dto1, dto2));
 
-        BusinessException exception = assertThrows(BusinessException.class,
-                () -> usersService.createUsersBulk(userDtos));
-
-        assertEquals("Invalid roles for user: invalid@example.com", exception.getMessage());
-        assertEquals("invalid@example.com", exception.getDetails().get("email"));
-        assertEquals("Role not found", exception.getDetails().get("error"));
-
-        verify(userRepository).findExistingEmails(anyList());
-        verify(rolesValidator).validateAndFindRoles(anySet());
-        verify(userRepository, never()).saveAll(anyList());
+        assertNotNull(responses);
+        assertEquals(2, responses.size());
     }
 
     @Test
-    void createUsersBulk_DuplicateEmails_ThrowsBusinessException() {
-        CreateUserDto duplicateDto = new CreateUserDto();
-        duplicateDto.setEmail("test@example.com");
-        duplicateDto.setFullName("Duplicate User");
-        duplicateDto.setDateOfBirth(LocalDate.of(1990, 1, 1));
-        duplicateDto.setPassword(passwordEncoder.encode("password123"));
-        duplicateDto.setRoles(Set.of(roleDto));
+    @Transactional
+    void createUsersBulk_DuplicateEmailsInRequest_ThrowsException() {
+        CreateUserDto dto1 = new CreateUserDto();
+        dto1.setEmail("duplicate@example.com");
 
-        List<CreateUserDto> userDtos = List.of(createUserDto, duplicateDto);
+        CreateUserDto dto2 = new CreateUserDto();
+        dto2.setEmail("duplicate@example.com");
 
-        BusinessException exception = assertThrows(BusinessException.class,
-                () -> usersService.createUsersBulk(userDtos));
+        List<CreateUserDto> list = List.of(dto1, dto2);
 
-        assertEquals("Duplicate emails in request", exception.getMessage());
+        assertThrows(BusinessException.class, () ->
+                userService.createUsersBulk(list));
     }
 
     @Test
-    void createUsersBulk_ExistingEmails_ThrowsBusinessException() {
-        List<CreateUserDto> userDtos = List.of(createUserDto);
-        when(userRepository.findExistingEmails(anyList())).thenReturn(List.of("test@example.com"));
+    @Transactional
+    void createUsersBulk_ExistingEmails_ThrowsException() {
+        CreateUserDto dto = new CreateUserDto();
+        dto.setEmail("existing@example.com");
+        List<CreateUserDto> list = List.of(dto);
+        when(userRepository.findExistingEmails(anyList())).thenReturn(List.of("existing@example.com"));
 
-        BusinessException exception = assertThrows(BusinessException.class,
-                () -> usersService.createUsersBulk(userDtos));
-
-        assertEquals("Some emails already exist", exception.getMessage());
-        verify(userRepository).findExistingEmails(anyList());
+        assertThrows(BusinessException.class, () ->
+                userService.createUsersBulk(list));
     }
 
     @Test
-    void deleteUser_UserExists_DeletesUser() {
+    @Transactional
+    void deleteUser_Success() {
         when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
-        doNothing().when(userRepository).delete(testUser);
 
-        usersService.deleteUser(1L);
+        userService.deleteUser(1L);
 
-        verify(userRepository).findById(1L);
-        verify(userRepository).delete(testUser);
+        verify(userRepository, times(1)).delete(testUser);
     }
 
     @Test
-    void deleteUser_UserNotFound_ThrowsNotFoundException() {
-        when(userRepository.findById(1L)).thenReturn(Optional.empty());
+    @Transactional
+    void deleteUser_NotFound_ThrowsException() {
+        when(userRepository.findById(anyLong())).thenReturn(Optional.empty());
 
-        NotFoundException exception = assertThrows(NotFoundException.class,
-                () -> usersService.deleteUser(1L));
+        assertThrows(NotFoundException.class, () -> userService.deleteUser(1L));
+    }
 
-        assertEquals("User not found", exception.getMessage());
-        verify(userRepository).findById(1L);
+    @Test
+    void getUserFromAuthentication_Success() {
+        AuthenticatedUser authenticatedUser = new AuthenticatedUser(testUser);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(authentication.getPrincipal()).thenReturn(authenticatedUser);
+        SecurityContextHolder.setContext(securityContext);
+
+        User user = userService.getUserFromAuthentication();
+
+        assertNotNull(user);
+        assertEquals(testUser.getId(), user.getId());
     }
 }

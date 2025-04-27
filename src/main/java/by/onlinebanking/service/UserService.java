@@ -169,6 +169,7 @@ public class UserService {
 
         checkEmailUniqueness(userDto.getEmail(), user.getId());
 
+        user.setActive(userDto.getActive());
         setUserBaseFields(userDto, user);
         Set<Role> roles = rolesValidator.validateAndFindRoles(userDto.getRoles());
         user.setRoles(roles);
@@ -191,7 +192,7 @@ public class UserService {
                         .addDetail(USER_ID, id));
 
         if (userDto.getEmail() != null) {
-            checkEmailUniqueness(userDto.getEmail(), user.getId()); // Измененная проверка
+            checkEmailUniqueness(userDto.getEmail(), user.getId());
         }
 
         updateUserFields(userDto, user);
@@ -211,7 +212,7 @@ public class UserService {
         if (userDto.getFullName() != null) user.setFullName(userDto.getFullName());
         if (userDto.getEmail() != null) user.setEmail(userDto.getEmail());
         if (userDto.getDateOfBirth() != null) user.setDateOfBirth(userDto.getDateOfBirth());
-        if (userDto.getPassword() != null) user.setPassword(userDto.getPassword());
+        if (userDto.getPassword() != null) user.setPassword(passwordEncoder.encode(userDto.getPassword()));
         if (userDto.getRoles() != null && !userDto.getRoles().isEmpty()) {
             Set<Role> validatedRoles = rolesValidator.validateAndFindRoles(userDto.getRoles());
             user.setRoles(validatedRoles);
