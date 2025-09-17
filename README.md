@@ -101,7 +101,7 @@ The project is designed with scalability, security, and maintainability in mind.
 The API is fully documented using **Swagger/OpenAPI**. You can explore the API endpoints, request/response models, and test the API directly from the Swagger UI.
 
 ### Access Swagger UI
-- **URL**: `http://localhost:8080/swagger-ui.html`
+- **URL**: `http://localhost:8080/swagger-ui/index.html`
 - **Features**:
     - Interactive API documentation.
     - Try-out functionality for testing endpoints.
